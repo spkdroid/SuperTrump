@@ -1,0 +1,58 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: supertrump-db
+    environment:
+      POSTGRES_DB: supertrump
+      POSTGRES_USER: supertrump
+      POSTGRES_PASSWORD: supertrump_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U supertrump -d supertrump"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+    restart: unless-stopped
+    networks:
+      - supertrump-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: supertrump-backend
+    environment:
+      DATABASE_URL: postgresql://supertrump:supertrump_pass@db:5432/supertrump
+      PORT: 3000
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - supertrump-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: supertrump-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - supertrump-net
+
+networks:
+  supertrump-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
