@@ -121,19 +121,19 @@ router.post('/:gameId/rounds', async (req, res, next) => {
 
 // DELETE /api/rounds/:id  – undo a round and reverse scores
 router.delete('/:id', async (req, res, next) => {
+  // Fetch data BEFORE opening transaction to avoid leaked connections on 404
+  const rRes = await pool.query('SELECT * FROM rounds WHERE id = $1', [req.params.id]);
+  if (!rRes.rows.length) return res.status(404).json({ error: 'Round not found' });
+  const round = rRes.rows[0];
+
+  const rpRes = await pool.query(
+    'SELECT player_id, score FROM round_players WHERE round_id = $1',
+    [req.params.id]
+  );
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-
-    // Fetch round + participants before deletion
-    const rRes = await pool.query('SELECT * FROM rounds WHERE id = $1', [req.params.id]);
-    if (!rRes.rows.length) return res.status(404).json({ error: 'Round not found' });
-    const round = rRes.rows[0];
-
-    const rpRes = await pool.query(
-      'SELECT player_id, score FROM round_players WHERE round_id = $1',
-      [req.params.id]
-    );
 
     // Reverse game_players scores
     for (const rp of rpRes.rows) {

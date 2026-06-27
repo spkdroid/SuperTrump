@@ -8,8 +8,8 @@ router.get('/', async (_req, res, next) => {
       `SELECT
          RANK() OVER (ORDER BY p.total_score DESC) AS rank,
          p.id, p.name, p.avatar_color,
-         p.total_score, p.games_played, p.games_won,
-         p.rounds_played, p.rounds_as_bidder, p.rounds_won_as_bidder,
+         p.total_score::int, p.games_played::int, p.games_won::int,
+         p.rounds_played::int, p.rounds_as_bidder::int, p.rounds_won_as_bidder::int,
          CASE WHEN p.games_played  > 0
            THEN ROUND(p.games_won::numeric  / p.games_played  * 100, 1) ELSE 0
          END AS win_rate,

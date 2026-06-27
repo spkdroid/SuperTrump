@@ -181,9 +181,9 @@ router.get('/:id/leaderboard', async (req, res, next) => {
          p.avatar_color,
          gp.current_score,
          gp.final_rank,
-         COUNT(rp.id)                                       AS rounds_played,
-         COUNT(rp.id) FILTER (WHERE rp.role = 'bidder')    AS times_bidder,
-         COUNT(rp.id) FILTER (WHERE rp.role = 'bidder' AND r.bid_won) AS bids_won
+         COUNT(rp.id)::int                                       AS rounds_played,
+         COUNT(rp.id) FILTER (WHERE rp.role = 'bidder')::int    AS times_bidder,
+         COUNT(rp.id) FILTER (WHERE rp.role = 'bidder' AND r.bid_won)::int AS bids_won
        FROM game_players gp
        JOIN players p ON p.id = gp.player_id
        LEFT JOIN round_players rp ON rp.player_id = p.id AND rp.game_id = gp.game_id

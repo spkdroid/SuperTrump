@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@mdi/font":        "^7.3.67",
-    "apexcharts":       "^3.44.2",
+    "apexcharts":       "^5.10.0",
     "axios":            "^1.6.2",
     "pinia":            "^2.1.7",
     "vue":              "^3.4.0",
