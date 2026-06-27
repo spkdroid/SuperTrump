@@ -16,18 +16,18 @@
       <!-- Stepper -->
       <v-stepper v-model="step" flat color="surface" class="bg-transparent">
         <v-stepper-header class="px-5 pt-2" style="box-shadow: none;">
-          <v-stepper-item value="1" title="Bid"    :complete="step > 1" color="primary" />
+          <v-stepper-item :value="1" title="Bid"    :complete="step > 1" color="primary" />
           <v-divider />
-          <v-stepper-item value="2" title="Teams"  :complete="step > 2" color="primary" />
+          <v-stepper-item :value="2" title="Teams"  :complete="step > 2" color="primary" />
           <v-divider />
-          <v-stepper-item value="3" title="Result" :complete="step > 3" color="primary" />
+          <v-stepper-item :value="3" title="Result" :complete="step > 3" color="primary" />
           <v-divider />
-          <v-stepper-item value="4" title="Confirm" color="primary" />
+          <v-stepper-item :value="4" title="Confirm" color="primary" />
         </v-stepper-header>
 
         <v-stepper-window>
           <!-- ── Step 1: Bid Details ──────────────────────── -->
-          <v-stepper-window-item value="1">
+          <v-stepper-window-item :value="1">
             <div class="pa-5">
               <div class="text-subtitle-2 text-medium-emphasis mb-4">
                 Who placed the highest bid?
@@ -145,7 +145,7 @@
           </v-stepper-window-item>
 
           <!-- ── Step 2: Teams ──────────────────────────────── -->
-          <v-stepper-window-item value="2">
+          <v-stepper-window-item :value="2">
             <div class="pa-5">
               <div class="text-subtitle-2 text-medium-emphasis mb-2">
                 Select who is on the
@@ -209,7 +209,7 @@
           </v-stepper-window-item>
 
           <!-- ── Step 3: Result ──────────────────────────────── -->
-          <v-stepper-window-item value="3">
+          <v-stepper-window-item :value="3">
             <div class="pa-5">
               <div class="text-subtitle-2 text-medium-emphasis mb-4">
                 Points won by the bidding team (0–56)
@@ -269,7 +269,7 @@
           </v-stepper-window-item>
 
           <!-- ── Step 4: Confirm / Score Preview ──────────────── -->
-          <v-stepper-window-item value="4">
+          <v-stepper-window-item :value="4">
             <div class="pa-5">
               <div class="text-subtitle-2 text-medium-emphasis mb-4">Score Breakdown</div>
 
