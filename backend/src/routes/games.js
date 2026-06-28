@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const { pool } = require('../db');
+const { calculateScores } = require('../scoring');
 
 const GAME_WITH_PLAYERS = `
   SELECT g.*,
@@ -164,6 +165,103 @@ router.post('/:id/complete', async (req, res, next) => {
       `${GAME_WITH_PLAYERS} WHERE g.id = $1 GROUP BY g.id`, [req.params.id]
     );
     res.json(full.rows[0]);
+  } catch (err) {
+    await client.query('ROLLBACK');
+    next(err);
+  } finally { client.release(); }
+});
+
+// POST /api/games/:id/rounds  – record a new round and update scores
+router.post('/:id/rounds', async (req, res, next) => {
+  const gameId = req.params.id;
+  const {
+    bidderId, bidAmount, bidType, trumpSuit,
+    partnerIds, opponentIds,
+    pointsWonByBiddingTeam, partnerCardsAsked, notes,
+  } = req.body;
+
+  if (!bidderId)                        return res.status(400).json({ error: 'bidderId is required' });
+  const bid = parseInt(bidAmount, 10);
+  if (isNaN(bid) || bid < 28 || bid > 56) return res.status(400).json({ error: 'bidAmount must be between 28 and 56' });
+  if (!bidType)                          return res.status(400).json({ error: 'bidType is required' });
+  if (!Array.isArray(partnerIds))        return res.status(400).json({ error: 'partnerIds must be an array' });
+  if (!Array.isArray(opponentIds))       return res.status(400).json({ error: 'opponentIds must be an array' });
+
+  const pts = parseInt(pointsWonByBiddingTeam, 10);
+  if (isNaN(pts) || pts < 0 || pts > 56) return res.status(400).json({ error: 'pointsWonByBiddingTeam must be 0–56' });
+
+  const bidWon = pts >= bid;
+  const { bidderScore, partnerScoreEach, partnerTotalScore } =
+    calculateScores(bid, bidType, bidWon, partnerIds.length);
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const rnRes = await client.query(
+      `SELECT COALESCE(MAX(round_number), 0) + 1 AS next_round FROM rounds WHERE game_id = $1`,
+      [gameId]
+    );
+    const roundNumber = rnRes.rows[0].next_round;
+
+    const roundRes = await client.query(
+      `INSERT INTO rounds
+         (game_id, round_number, bidder_id, bid_amount, bid_type, trump_suit,
+          partner_cards_asked, points_won_by_bidding_team, bid_won,
+          bidder_score, partner_score_each, partner_total_score, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
+      [
+        gameId, roundNumber, bidderId, bid, bidType, trumpSuit || null,
+        partnerCardsAsked || null, pts, bidWon,
+        bidderScore, partnerScoreEach, partnerTotalScore, notes || null,
+      ]
+    );
+    const round = roundRes.rows[0];
+
+    const insertRP = (pid, team, role, score) =>
+      client.query(
+        `INSERT INTO round_players (round_id, player_id, game_id, team, role, score)
+         VALUES ($1,$2,$3,$4,$5,$6)`,
+        [round.id, pid, gameId, team, role, score]
+      );
+
+    await insertRP(bidderId, 'bidding', 'bidder', bidderScore);
+    for (const pid of partnerIds)  await insertRP(pid, 'bidding',  'partner',  partnerScoreEach);
+    for (const pid of opponentIds) await insertRP(pid, 'opposing', 'opponent', 0);
+
+    const updateGP = (pid, score) =>
+      client.query(
+        `UPDATE game_players SET current_score = current_score + $1
+         WHERE game_id = $2 AND player_id = $3`,
+        [score, gameId, pid]
+      );
+
+    await updateGP(bidderId, bidderScore);
+    for (const pid of partnerIds) await updateGP(pid, partnerScoreEach);
+
+    await client.query(
+      `UPDATE players SET
+         rounds_played        = rounds_played + 1,
+         rounds_as_bidder     = rounds_as_bidder + 1,
+         rounds_won_as_bidder = rounds_won_as_bidder + $1,
+         updated_at = NOW()
+       WHERE id = $2`,
+      [bidWon ? 1 : 0, bidderId]
+    );
+    for (const pid of [...partnerIds, ...opponentIds]) {
+      await client.query(
+        `UPDATE players SET rounds_played = rounds_played + 1, updated_at = NOW() WHERE id = $1`,
+        [pid]
+      );
+    }
+
+    await client.query(
+      `UPDATE games SET current_round = $1, updated_at = NOW() WHERE id = $2`,
+      [roundNumber, gameId]
+    );
+
+    await client.query('COMMIT');
+    res.status(201).json(round);
   } catch (err) {
     await client.query('ROLLBACK');
     next(err);

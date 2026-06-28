@@ -5,7 +5,7 @@
     max-width="680"
     persistent
   >
-    <v-card color="surface" rounded="xl">
+    <v-card color="surface" rounded="xl" style="display:flex; flex-direction:column; max-height:90vh; overflow:hidden;">
       <v-card-title class="pa-5 pb-0 d-flex align-center">
         <v-icon color="primary" class="mr-2">mdi-plus-circle</v-icon>
         Record Round {{ (game?.current_round ?? 0) + 1 }}
@@ -14,7 +14,7 @@
       </v-card-title>
 
       <!-- Stepper -->
-      <v-stepper v-model="step" flat color="surface" class="bg-transparent">
+      <v-stepper v-model="step" flat color="surface" class="bg-transparent" style="flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden;">
         <v-stepper-header class="px-5 pt-2" style="box-shadow: none;">
           <v-stepper-item :value="1" title="Bid"    :complete="step > 1" color="primary" />
           <v-divider />
@@ -25,7 +25,7 @@
           <v-stepper-item :value="4" title="Confirm" color="primary" />
         </v-stepper-header>
 
-        <v-stepper-window>
+        <v-stepper-window style="flex:1; min-height:0; overflow-y:auto;">
           <!-- ── Step 1: Bid Details ──────────────────────── -->
           <v-stepper-window-item :value="1">
             <div class="pa-5">
@@ -147,6 +147,63 @@
           <!-- ── Step 2: Teams ──────────────────────────────── -->
           <v-stepper-window-item :value="2">
             <div class="pa-5">
+              <!-- Bid amount editor (editable from Teams step too) -->
+              <v-card color="surface-variant" rounded="lg" class="pa-3 mb-4">
+                <div class="d-flex align-center gap-2 mb-2">
+                  <v-icon size="16" color="primary">mdi-gavel</v-icon>
+                  <span class="text-caption font-weight-bold text-primary">BID AMOUNT</span>
+                  <v-spacer />
+                  <v-chip :color="bidTypeColor" label size="x-small" prepend-icon="mdi-information-outline">
+                    {{ bidTypeLabel }}
+                  </v-chip>
+                  <v-chip
+                    v-if="form.bidAmount === 56"
+                    :color="form.wasUpgradedTo56 ? 'warning' : 'info'"
+                    label
+                    size="x-small"
+                    class="cursor-pointer"
+                    @click="form.wasUpgradedTo56 = !form.wasUpgradedTo56"
+                  >
+                    {{ form.wasUpgradedTo56 ? 'Mid-game ↑' : 'Initial bid' }}
+                  </v-chip>
+                </div>
+                <div class="d-flex align-center gap-3 mb-2">
+                  <v-slider
+                    v-model="form.bidAmount"
+                    :min="28"
+                    :max="56"
+                    :step="1"
+                    color="primary"
+                    track-color="surface-variant"
+                    thumb-label
+                    hide-details
+                    class="flex-grow-1"
+                  />
+                  <v-text-field
+                    v-model.number="form.bidAmount"
+                    type="number"
+                    min="28"
+                    max="56"
+                    variant="outlined"
+                    color="primary"
+                    density="compact"
+                    style="width:80px; flex-shrink:0;"
+                    hide-details
+                  />
+                </div>
+                <div class="d-flex gap-1 flex-wrap">
+                  <v-chip
+                    v-for="b in [28,30,32,35,36,38,40,42,44,46,50,52,56]"
+                    :key="b"
+                    :color="form.bidAmount === b ? 'primary' : undefined"
+                    size="x-small"
+                    label
+                    class="cursor-pointer"
+                    @click="form.bidAmount = b"
+                  >{{ b }}</v-chip>
+                </div>
+              </v-card>
+
               <div class="text-subtitle-2 text-medium-emphasis mb-2">
                 Select who is on the
                 <strong class="text-primary">bidding team</strong>
@@ -280,10 +337,13 @@
                 size="small"
                 class="mb-4"
               >
-                {{ bidTypeLabel }} ·
-                {{ form.bidAmount === 56 && form.wasUpgradedTo56 ? '3×' : '' }}
-                {{ preview?.winAmount }} base →
-                {{ bidWon ? 'WIN' : 'LOSS' }}
+                {{ bidTypeLabel }}
+                ({{ { normal: '1×', honors: '2×', initial_56: '4×', upgraded_56: '3×' }[computedBidType] }}({{ form.bidAmount }}/2)
+                = {{ preview?.winAmount }})
+                →
+                {{ bidWon
+                  ? `WIN: Bidder +${preview?.winAmount}, Partners +${preview?.winAmount} total`
+                  : `LOSS: Bidder ${preview?.bidderScore}, Partners ${preview?.partnerTotalScore} total (2× penalty)` }}
               </v-chip>
 
               <!-- Score table -->
@@ -444,6 +504,11 @@ watch(() => props.modelValue, v => {
       partnerIds: [], pointsWon: 0, notes: '',
     }
   }
+})
+
+// Reset the "upgraded to 56" flag if the bid is moved away from 56
+watch(() => form.value.bidAmount, (newVal) => {
+  if (newVal !== 56) form.value.wasUpgradedTo56 = false
 })
 
 const players   = computed(() => props.game?.players || [])
