@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS rounds (
     bidder_id                   INTEGER NOT NULL REFERENCES players(id),
     bid_amount                  INTEGER NOT NULL CHECK (bid_amount BETWEEN 28 AND 56),
     bid_type                    VARCHAR(20) NOT NULL
-                                    CHECK (bid_type IN ('normal','honors','initial_56','upgraded_56')),
+                                    CHECK (bid_type IN ('normal','honors','initial_56','upgraded_56','midgame_changed')),
     trump_suit                  VARCHAR(20)
                                     CHECK (trump_suit IN ('hearts','diamonds','clubs','spades','no_trump')),
     partner_cards_asked         TEXT,          -- e.g. "Jack of Hearts, Joker"

@@ -24,15 +24,24 @@
             Started {{ fmtDate(game.created_at) }}
           </p>
         </div>
-        <div class="d-flex gap-2 align-center">
+        <div class="d-flex gap-2 align-center flex-wrap">
           <v-btn
             v-if="game.status === 'active'"
             color="primary"
             prepend-icon="mdi-plus"
             rounded="lg"
-            @click="roundDialog = true"
+            @click="lastRoundMode = false; roundDialog = true"
           >
             Add Round
+          </v-btn>
+          <v-btn
+            v-if="game.status === 'active'"
+            color="warning"
+            prepend-icon="mdi-flag-triangle"
+            rounded="lg"
+            @click="lastRoundMode = true; roundDialog = true"
+          >
+            Last Round
           </v-btn>
           <v-btn
             v-if="game.status === 'active'"
@@ -146,6 +155,7 @@
       v-if="game"
       v-model="roundDialog"
       :game="game"
+      :last-round="lastRoundMode"
       @saved="onRoundSaved"
     />
 
@@ -163,8 +173,73 @@
         <v-card-actions class="pa-4">
           <v-spacer />
           <v-btn variant="text" @click="completeDialog = false">Cancel</v-btn>
-          <v-btn color="secondary" rounded="lg" :loading="saving" @click="completeGame">
+          <v-btn color="secondary" rounded="lg" :loading="saving" @click="completeGame()">
             End &amp; Declare Winner
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- 🏆 Winner Announcement -->
+    <v-dialog v-model="winnerDialog" max-width="460" persistent>
+      <v-card color="surface" rounded="xl" style="overflow:hidden;">
+        <!-- Celebration header -->
+        <div style="background:linear-gradient(135deg,rgba(74,222,128,0.18),rgba(250,204,21,0.12));padding:32px 24px 20px;text-align:center;">
+          <div style="font-size:72px;line-height:1;margin-bottom:12px;">🏆</div>
+          <div class="text-h4 font-weight-black text-secondary">Game Over!</div>
+          <div v-if="leaderboard[0]" class="text-h5 font-weight-bold text-white mt-2">
+            {{ leaderboard[0].player_name }} wins!
+          </div>
+          <v-chip
+            v-if="leaderboard[0]"
+            :color="leaderboard[0].avatar_color"
+            size="large"
+            label
+            class="mt-3 px-6"
+            style="font-size:18px;font-weight:900;"
+          >
+            {{ leaderboard[0].current_score >= 0 ? '+' : '' }}{{ leaderboard[0].current_score }} pts
+          </v-chip>
+        </div>
+
+        <v-card-text class="pa-5">
+          <div class="text-caption font-weight-bold text-medium-emphasis mb-3 text-center">FINAL STANDINGS</div>
+          <div
+            v-for="(entry, idx) in leaderboard"
+            :key="entry.player_id"
+            class="d-flex align-center mb-2 px-3 py-2 rounded-lg"
+            :style="idx === 0 ? 'background:rgba(74,222,128,0.08);' : ''"
+          >
+            <div class="text-subtitle-1 mr-3" style="width:28px;text-align:center;">
+              {{ ['🥇','🥈','🥉'][idx] ?? (idx + 1) }}
+            </div>
+            <v-avatar :color="entry.avatar_color" size="30" rounded="lg" class="mr-3">
+              <span style="font-size:9px;font-weight:700;color:rgba(0,0,0,0.7);">{{ initials(entry.player_name) }}</span>
+            </v-avatar>
+            <span class="flex-grow-1 text-body-2 font-weight-medium">{{ entry.player_name }}</span>
+            <div class="text-caption text-medium-emphasis mr-3">{{ entry.rounds_played }} rounds</div>
+            <v-chip
+              :color="entry.current_score >= 0 ? 'success' : 'error'"
+              size="small" label class="font-weight-bold"
+            >
+              {{ entry.current_score >= 0 ? '+' : '' }}{{ entry.current_score }}
+            </v-chip>
+          </div>
+        </v-card-text>
+
+        <v-divider />
+        <v-card-actions class="pa-4 d-flex gap-3">
+          <v-btn
+            variant="outlined" color="primary" rounded="lg" class="flex-grow-1"
+            @click="winnerDialog = false; $router.push('/games')"
+          >
+            <v-icon start size="18">mdi-plus-circle</v-icon> New Game
+          </v-btn>
+          <v-btn
+            color="secondary" rounded="lg" class="flex-grow-1"
+            @click="winnerDialog = false"
+          >
+            <v-icon start size="18">mdi-eye</v-icon> View Results
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -192,6 +267,8 @@ const leaderboard     = ref([])
 const rounds          = ref([])
 const roundDialog     = ref(false)
 const completeDialog  = ref(false)
+const lastRoundMode   = ref(false)
+const winnerDialog    = ref(false)
 
 function initials(n = '') { return n.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() }
 function fmtDate(d)       { return new Date(d).toLocaleDateString() }
@@ -230,8 +307,15 @@ async function fetchAll() {
 
 async function onRoundSaved() {
   roundDialog.value = false
-  store.notify('Round recorded!')
-  await fetchAll()
+  if (lastRoundMode.value) {
+    lastRoundMode.value = false
+    store.notify('Last round recorded! Finalising scores...')
+    await fetchAll()
+    await completeGame(true)
+  } else {
+    store.notify('Round recorded!')
+    await fetchAll()
+  }
 }
 
 async function onRoundDeleted() {
@@ -239,13 +323,16 @@ async function onRoundDeleted() {
   await fetchAll()
 }
 
-async function completeGame() {
+async function completeGame(fromLastRound = false) {
   saving.value = true
   try {
     await gamesAPI.complete(gameId)
-    store.notify('🏆 Game completed!')
-    completeDialog.value = false
+    if (!fromLastRound) {
+      store.notify('🏆 Game completed!')
+      completeDialog.value = false
+    }
     await fetchAll()
+    winnerDialog.value = true
   } finally { saving.value = false }
 }
 

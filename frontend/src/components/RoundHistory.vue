@@ -194,7 +194,7 @@ const expandedRound = computed(() =>
 function initials(n = '') { return n.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() }
 
 function bidTypeColor(t) {
-  return { normal: 'info', honors: 'warning', initial_56: 'error', upgraded_56: 'purple' }[t] || 'grey'
+  return { normal: 'info', honors: 'warning', initial_56: 'error', upgraded_56: 'purple', midgame_changed: 'orange' }[t] || 'grey'
 }
 function suitIcon(s)  { return SUIT_META[s]?.icon  || '?' }
 function suitColor(s) { return SUIT_META[s]?.color || '#9CA3AF' }

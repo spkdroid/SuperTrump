@@ -7,8 +7,11 @@
   >
     <v-card color="surface" rounded="xl" style="display:flex; flex-direction:column; max-height:90vh; overflow:hidden;">
       <v-card-title class="pa-5 pb-0 d-flex align-center">
-        <v-icon color="primary" class="mr-2">mdi-plus-circle</v-icon>
+        <v-icon :color="lastRound ? 'warning' : 'primary'" class="mr-2">mdi-plus-circle</v-icon>
         Record Round {{ (game?.current_round ?? 0) + 1 }}
+        <v-chip v-if="lastRound" color="warning" size="x-small" label class="ml-2">
+          🏁 LAST ROUND
+        </v-chip>
         <v-spacer />
         <v-btn icon="mdi-close" variant="text" @click="$emit('update:modelValue', false)" />
       </v-card-title>
@@ -268,6 +271,85 @@
           <!-- ── Step 3: Result ──────────────────────────────── -->
           <v-stepper-window-item :value="3">
             <div class="pa-5">
+              <!-- Bid amount editor (editable from Results step too) -->
+              <v-card color="surface-variant" rounded="lg" class="pa-3 mb-4">
+                <div class="d-flex align-center gap-2 mb-2">
+                  <v-icon size="16" color="primary">mdi-gavel</v-icon>
+                  <span class="text-caption font-weight-bold text-primary">BID AMOUNT</span>
+                  <v-spacer />
+                  <v-chip :color="bidTypeColor" label size="x-small" prepend-icon="mdi-information-outline">
+                    {{ bidTypeLabel }}
+                  </v-chip>
+                  <v-chip
+                    v-if="form.bidAmount === 56"
+                    :color="form.wasUpgradedTo56 ? 'warning' : 'info'"
+                    label
+                    size="x-small"
+                    class="cursor-pointer"
+                    @click="form.wasUpgradedTo56 = !form.wasUpgradedTo56"
+                  >
+                    {{ form.wasUpgradedTo56 ? 'Mid-game ↑' : 'Initial bid' }}
+                  </v-chip>
+                </div>
+                <div class="d-flex align-center gap-3 mb-2">
+                  <v-slider
+                    v-model="form.bidAmount"
+                    :min="28"
+                    :max="56"
+                    :step="1"
+                    color="primary"
+                    track-color="surface-variant"
+                    thumb-label
+                    hide-details
+                    class="flex-grow-1"
+                  />
+                  <v-text-field
+                    v-model.number="form.bidAmount"
+                    type="number"
+                    min="28"
+                    max="56"
+                    variant="outlined"
+                    color="primary"
+                    density="compact"
+                    style="width:80px; flex-shrink:0;"
+                    hide-details
+                  />
+                </div>
+                <div class="d-flex gap-1 flex-wrap">
+                  <v-chip
+                    v-for="b in [28,30,32,35,36,38,40,42,44,46,50,52,56]"
+                    :key="b"
+                    :color="form.bidAmount === b ? 'primary' : undefined"
+                    size="x-small"
+                    label
+                    class="cursor-pointer"
+                    @click="form.bidAmount = b"
+                  >{{ b }}</v-chip>
+                </div>
+              </v-card>
+
+              <!-- Mid-game bid change indicator -->
+              <v-alert
+                v-if="isMidgameResultChange"
+                color="orange"
+                variant="tonal"
+                density="compact"
+                rounded="lg"
+                class="mb-4"
+              >
+                <div class="d-flex align-center gap-2">
+                  <v-icon size="18">mdi-swap-horizontal</v-icon>
+                  <div class="text-body-2">
+                    <strong>Mid-game bid change</strong>:
+                    {{ form.bidAmountOnEnterStep3 }} → {{ form.bidAmount }}
+                    &nbsp;·&nbsp;
+                    Win = <strong>+{{ form.bidAmount }}</strong>,
+                    Loss = <strong>−{{ 2 * form.bidAmount }}</strong>,
+                    Each partner = <strong>±{{ Math.floor(form.bidAmount / 2) }}</strong>
+                  </div>
+                </div>
+              </v-alert>
+
               <div class="text-subtitle-2 text-medium-emphasis mb-4">
                 Points won by the bidding team (0–56)
               </div>
@@ -337,13 +419,11 @@
                 size="small"
                 class="mb-4"
               >
-                {{ bidTypeLabel }}
-                ({{ { normal: '1×', honors: '2×', initial_56: '4×', upgraded_56: '3×' }[computedBidType] }}({{ form.bidAmount }}/2)
-                = {{ preview?.winAmount }})
+                {{ bidTypeLabel }} · Bid {{ form.bidAmount }}
                 →
                 {{ bidWon
-                  ? `WIN: Bidder +${preview?.winAmount}, Partners +${preview?.winAmount} total`
-                  : `LOSS: Bidder ${preview?.bidderScore}, Partners ${preview?.partnerTotalScore} total (2× penalty)` }}
+                  ? `WIN: Bidder +${preview?.bidderScore}, Each partner +${preview?.partnerScoreEach}`
+                  : `LOSS: Bidder ${preview?.bidderScore}, Each partner ${preview?.partnerScoreEach}` }}
               </v-chip>
 
               <!-- Score table -->
@@ -477,21 +557,22 @@ import { ref, computed, watch } from 'vue'
 import { gamesAPI } from '@/api'
 import { getBidType, BID_TYPE_LABELS, calculateScores, SUIT_META } from '@/utils/scoring'
 
-const props  = defineProps({ modelValue: Boolean, game: Object })
+const props  = defineProps({ modelValue: Boolean, game: Object, lastRound: Boolean })
 const emit   = defineEmits(['update:modelValue', 'saved'])
 
 const step   = ref(1)
 const saving = ref(false)
 
 const form = ref({
-  bidderId:          null,
-  bidAmount:         28,
-  wasUpgradedTo56:   false,
-  trumpSuit:         'spades',
-  partnerCardsAsked: '',
-  partnerIds:        [],
-  pointsWon:         0,
-  notes:             '',
+  bidderId:               null,
+  bidAmount:              28,
+  wasUpgradedTo56:        false,
+  bidAmountOnEnterStep3:  null,   // snapshot when step 3 is entered
+  trumpSuit:              'spades',
+  partnerCardsAsked:      '',
+  partnerIds:             [],
+  pointsWon:              0,
+  notes:                  '',
 })
 
 // Reset form when dialog opens
@@ -500,6 +581,7 @@ watch(() => props.modelValue, v => {
     step.value = 1
     form.value = {
       bidderId: null, bidAmount: 28, wasUpgradedTo56: false,
+      bidAmountOnEnterStep3: null,
       trumpSuit: 'spades', partnerCardsAsked: '',
       partnerIds: [], pointsWon: 0, notes: '',
     }
@@ -509,6 +591,17 @@ watch(() => props.modelValue, v => {
 // Reset the "upgraded to 56" flag if the bid is moved away from 56
 watch(() => form.value.bidAmount, (newVal) => {
   if (newVal !== 56) form.value.wasUpgradedTo56 = false
+})
+
+// When entering Step 3 (Result), snapshot the current bid as the baseline.
+// Any change FROM that snapshot while on/after Step 3 is a "mid-game change".
+// Going back to Step 1 or 2 clears the snapshot so Step 2 edits remain baseline.
+watch(step, (newStep) => {
+  if (newStep === 3) {
+    form.value.bidAmountOnEnterStep3 = form.value.bidAmount
+  } else if (newStep < 3) {
+    form.value.bidAmountOnEnterStep3 = null
+  }
 })
 
 const players   = computed(() => props.game?.players || [])
@@ -522,14 +615,22 @@ const opponentIds = computed(() =>
     .map(p => p.id)
 )
 
-const computedBidType = computed(() =>
-  getBidType(form.value.bidAmount, form.value.wasUpgradedTo56)
+// True when the bid was changed after entering the Result step.
+const isMidgameResultChange = computed(() =>
+  form.value.bidAmountOnEnterStep3 !== null &&
+  form.value.bidAmount !== form.value.bidAmountOnEnterStep3
 )
+
+const computedBidType = computed(() => {
+  // Mid-game result-screen override takes priority over all other type detection.
+  if (isMidgameResultChange.value) return 'midgame_changed'
+  return getBidType(form.value.bidAmount, form.value.wasUpgradedTo56)
+})
 
 const bidTypeLabel = computed(() => BID_TYPE_LABELS[computedBidType.value] || computedBidType.value)
 
 const bidTypeColor = computed(() => ({
-  normal: 'info', honors: 'warning', initial_56: 'error', upgraded_56: 'purple',
+  normal: 'info', honors: 'warning', initial_56: 'error', upgraded_56: 'purple', midgame_changed: 'orange',
 }[computedBidType.value] || 'grey'))
 
 const bidWon = computed(() => form.value.pointsWon >= form.value.bidAmount)
