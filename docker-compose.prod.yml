@@ -1,0 +1,80 @@
+###############################################################
+#  Super Trump — Production Docker Compose
+#  Usage:  docker compose -f docker-compose.prod.yml up -d
+#
+#  Required .env file keys (see README → Environment Variables):
+#    POSTGRES_PASSWORD, DB_PASSWORD, SECRET_KEY
+###############################################################
+
+services:
+
+  db:
+    image: postgres:15-alpine
+    container_name: supertrump-db
+    environment:
+      POSTGRES_DB:       supertrump
+      POSTGRES_USER:     supertrump
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U supertrump -d supertrump"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    networks:
+      - supertrump-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: supertrump-backend
+    environment:
+      DATABASE_URL: postgresql://supertrump:${POSTGRES_PASSWORD}@db:5432/supertrump
+      PORT:         3000
+      NODE_ENV:     production
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - supertrump-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: supertrump-frontend
+    ports:
+      - "80:80"           # <── port 80 for production (no :8080)
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - supertrump-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  supertrump-net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

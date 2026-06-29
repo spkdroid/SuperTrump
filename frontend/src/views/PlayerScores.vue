@@ -152,55 +152,71 @@
         <div
           v-for="(entry, idx) in leaderboard"
           :key="entry.player_id"
-          class="player-score-card"
-          :class="{ 'psc-leader': idx === 0 }"
-          :style="`--pcolor:${entry.avatar_color}`"
+          class="playing-card"
+          :class="{ 'pcard-leader': idx === 0 }"
+          :style="`--pcolor:${entry.avatar_color}; --suit-color:${SUIT_COLORS[idx % 4]}`"
           @click="openFocus(entry, idx)"
         >
-          <!-- rank -->
-          <div class="psc-rank">
-            <span v-if="idx < 3" class="rank-emoji-sm">{{ ['🥇','🥈','🥉'][idx] }}</span>
-            <span v-else class="text-caption text-medium-emphasis font-weight-bold">#{{ idx+1 }}</span>
+          <!-- Top-left corner -->
+          <div class="pc-corner pc-tl">
+            <div class="pc-corner-rank">{{ cornerRank(idx) }}</div>
+            <div class="pc-corner-suit">{{ SUITS[idx % 4] }}</div>
           </div>
 
-          <!-- avatar + name -->
-          <div class="psc-identity">
-            <v-avatar :color="entry.avatar_color" size="44" rounded="xl">
-              <span class="font-weight-black" style="font-size:13px;color:rgba(0,0,0,0.72)">
+          <!-- Bottom-right corner (rotated 180°) -->
+          <div class="pc-corner pc-br">
+            <div class="pc-corner-rank">{{ cornerRank(idx) }}</div>
+            <div class="pc-corner-suit">{{ SUITS[idx % 4] }}</div>
+          </div>
+
+          <!-- Card body -->
+          <div class="pc-body">
+            <!-- Large watermark suit symbol -->
+            <div class="pc-suit-watermark">{{ SUITS[idx % 4] }}</div>
+
+            <!-- Avatar -->
+            <v-avatar :color="entry.avatar_color" size="56" rounded="xl" class="pc-avatar">
+              <span class="font-weight-black" style="font-size:15px;color:rgba(0,0,0,0.72)">
                 {{ initials(entry.player_name) }}
               </span>
             </v-avatar>
-            <div class="psc-name-wrap">
-              <div class="psc-name">{{ entry.player_name }}</div>
-              <div class="text-caption text-medium-emphasis">
-                {{ entry.rounds_played }}r · {{ entry.times_bidder }} bids
-                <span v-if="entry.times_bidder > 0">({{ bidWinPct(entry) }}%)</span>
+
+            <!-- Name -->
+            <div class="pc-name">{{ entry.player_name }}</div>
+
+            <!-- Score -->
+            <div class="pc-score" :class="entry.current_score >= 0 ? 'score-pos' : 'score-neg'">
+              {{ entry.current_score >= 0 ? '+' : '' }}{{ entry.current_score }}
+            </div>
+
+            <!-- Last round trend -->
+            <div v-if="lastRoundDelta(entry.player_id) !== null" class="pc-trend">
+              <v-icon
+                :color="lastRoundDelta(entry.player_id) >= 0 ? 'success' : 'error'"
+                size="13"
+              >{{ lastRoundDelta(entry.player_id) >= 0 ? 'mdi-trending-up' : 'mdi-trending-down' }}</v-icon>
+              <span
+                class="font-weight-bold ml-1"
+                :class="lastRoundDelta(entry.player_id) >= 0 ? 'text-success' : 'text-error'"
+              >{{ lastRoundDelta(entry.player_id) >= 0 ? '+' : '' }}{{ lastRoundDelta(entry.player_id) }}</span>
+            </div>
+
+            <!-- Mini stats -->
+            <div class="pc-stats">
+              <div class="pc-stat">
+                <span class="pc-stat-val">{{ entry.rounds_played }}</span>
+                <span class="pc-stat-lbl">Rounds</span>
+              </div>
+              <div class="pc-stat">
+                <span class="pc-stat-val">{{ entry.times_bidder }}</span>
+                <span class="pc-stat-lbl">Bids</span>
+              </div>
+              <div v-if="entry.times_bidder > 0" class="pc-stat">
+                <span class="pc-stat-val" :class="bidWinPct(entry) >= 50 ? 'text-success' : 'text-error'">{{ bidWinPct(entry) }}%</span>
+                <span class="pc-stat-lbl">Bid%</span>
               </div>
             </div>
           </div>
-
-          <!-- trend arrow from last round -->
-          <div class="psc-trend">
-            <v-icon
-              v-if="lastRoundDelta(entry.player_id) > 0"
-              color="success" size="18">mdi-trending-up</v-icon>
-            <v-icon
-              v-else-if="lastRoundDelta(entry.player_id) < 0"
-              color="error" size="18">mdi-trending-down</v-icon>
-            <span v-if="lastRoundDelta(entry.player_id) !== null"
-              class="trend-delta text-caption"
-              :class="lastRoundDelta(entry.player_id) >= 0 ? 'text-success' : 'text-error'">
-              {{ lastRoundDelta(entry.player_id) >= 0 ? '+' : '' }}{{ lastRoundDelta(entry.player_id) }}
-            </span>
-          </div>
-
-          <!-- score -->
-          <div class="psc-score" :class="entry.current_score >= 0 ? 'score-pos' : 'score-neg'">
-            {{ entry.current_score >= 0 ? '+' : '' }}{{ entry.current_score }}
-          </div>
-
-          <!-- tap hint -->
-          <v-icon class="psc-expand" size="14" color="grey">mdi-fullscreen</v-icon>
         </div>
       </div>
 
@@ -252,6 +268,14 @@ const autoRefresh = ref(true)
 let   refreshTimer = null
 
 function initials(n = '') { return n.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() }
+
+const SUITS       = ['♠', '♥', '♦', '♣']
+const SUIT_COLORS = ['#4ADE80', '#F87171', '#FCD34D', '#60A5FA']
+function cornerRank(idx) {
+  const labels = ['A','2','3','4','5','6','7','8','9','10','J','Q','K']
+  return labels[idx] ?? String(idx + 1)
+}
+
 function bidWinPct(e) {
   return e.times_bidder > 0 ? Math.round(e.bids_won / e.times_bidder * 100) : 0
 }
@@ -360,7 +384,7 @@ onUnmounted(stopAutoRefresh)
 .scores-header {
   display: flex; align-items: center; gap: 12px;
   padding: 14px 16px 10px;
-  background: rgba(17,26,17,0.95);
+  background: rgba(var(--v-theme-surface), 0.95);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid rgba(74,222,128,0.1);
   position: sticky; top: 0; z-index: 10;
@@ -382,55 +406,124 @@ onUnmounted(stopAutoRefresh)
 .lhs-pos   { color: #4ADE80; text-shadow: 0 0 16px rgba(74,222,128,0.5); }
 .lhs-neg   { color: #F87171; text-shadow: 0 0 16px rgba(248,113,113,0.5); }
 
-/* ── Player score cards grid ─────────────────────────────── */
+/* ── Playing card grid ───────────────────────────────────── */
 .scores-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
 }
-@media (min-width: 600px)  { .scores-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (min-width: 960px)  { .scores-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (min-width: 1280px) { .scores-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 600px)  { .scores-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; } }
+@media (min-width: 960px)  { .scores-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 1280px) { .scores-grid { grid-template-columns: repeat(5, 1fr); } }
 
-.player-score-card {
+/* ── The playing card ────────────────────────────────────── */
+.playing-card {
   position: relative;
-  display: flex; align-items: center; gap: 10px;
-  padding: 14px 16px;
+  aspect-ratio: 5 / 7;
   border-radius: 16px;
-  border: 1.5px solid rgba(74,222,128,0.1);
-  background: rgba(17,26,17,0.7);
+  background: linear-gradient(170deg, #13201a 0%, #0a1410 55%, #0c1219 100%);
+  border: 1.5px solid color-mix(in srgb, var(--suit-color) 35%, transparent);
+  box-shadow:
+    0 4px 18px rgba(0,0,0,0.5),
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    inset 0 -1px 0 rgba(0,0,0,0.3);
   cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
   overflow: hidden;
+  transition: transform 0.22s cubic-bezier(.34,1.56,.64,1), box-shadow 0.22s;
+  display: flex;
+  flex-direction: column;
 }
-.player-score-card::before {
-  content: '';
-  position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
-  background: var(--pcolor);
-  border-radius: 16px 0 0 16px;
+.playing-card:hover {
+  transform: translateY(-8px) rotate(-1.5deg);
+  box-shadow:
+    0 20px 48px rgba(0,0,0,0.6),
+    0 0 24px color-mix(in srgb, var(--suit-color) 22%, transparent);
 }
-.player-score-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(74,222,128,0.25);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+.pcard-leader {
+  border-color: color-mix(in srgb, #FCD34D 55%, transparent) !important;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.5), 0 0 28px rgba(252,211,77,0.14) !important;
 }
-.psc-leader {
-  border-color: rgba(252,211,77,0.3) !important;
-  background: rgba(252,211,77,0.04) !important;
+.pcard-leader:hover {
+  box-shadow: 0 20px 48px rgba(0,0,0,0.6), 0 0 40px rgba(252,211,77,0.26) !important;
 }
 
-.psc-rank       { width: 28px; text-align: center; flex-shrink: 0; }
-.rank-emoji-sm  { font-size: 18px; line-height: 1; }
-.psc-identity   { display: flex; align-items: center; gap: 10px; flex-grow: 1; min-width: 0; }
-.psc-name-wrap  { min-width: 0; }
-.psc-name       { font-size: 0.9rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.psc-trend      { display: flex; flex-direction: column; align-items: center; width: 32px; flex-shrink: 0; }
-.trend-delta    { font-size: 10px; font-weight: 700; line-height: 1; margin-top: 1px; }
-.psc-score      { font-size: 1.5rem; font-weight: 900; letter-spacing: -1px; text-align: right; flex-shrink: 0; width: 72px; }
-.psc-expand     { position: absolute; bottom: 6px; right: 6px; opacity: 0.3; }
+/* Corner pip (top-left + bottom-right rotated) */
+.pc-corner {
+  position: absolute;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 1px; z-index: 2; pointer-events: none;
+}
+.pc-tl { top: 10px; left: 11px; }
+.pc-br { bottom: 10px; right: 11px; transform: rotate(180deg); }
+.pc-corner-rank {
+  font-size: 1.05rem; font-weight: 900; line-height: 1;
+  color: var(--suit-color);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--suit-color) 50%, transparent);
+}
+.pc-corner-suit {
+  font-size: 0.8rem; line-height: 1.1;
+  color: var(--suit-color);
+  opacity: 0.85;
+}
 
-.score-pos { color: #4ADE80; }
-.score-neg { color: #F87171; }
+/* Card body */
+.pc-body {
+  position: relative;
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 28px 10px 14px;
+  gap: 5px;
+  z-index: 1;
+}
+
+/* Big translucent suit behind content */
+.pc-suit-watermark {
+  position: absolute;
+  font-size: 6.5rem; line-height: 1;
+  color: var(--suit-color);
+  opacity: 0.06;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none; user-select: none;
+}
+
+.pc-avatar { flex-shrink: 0; z-index: 1; }
+
+.pc-name {
+  font-size: 0.78rem; font-weight: 700; color: #fff;
+  text-align: center;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.25; word-break: break-word;
+  max-width: 100%;
+  z-index: 1;
+}
+
+.pc-score {
+  font-size: 1.9rem; font-weight: 900; letter-spacing: -1.5px; line-height: 1; z-index: 1;
+}
+.score-pos { color: #4ADE80; text-shadow: 0 0 14px rgba(74,222,128,0.4); }
+.score-neg { color: #F87171; text-shadow: 0 0 14px rgba(248,113,113,0.4); }
+
+.pc-trend {
+  display: flex; align-items: center;
+  font-size: 11px; font-weight: 700; z-index: 1;
+}
+
+.pc-stats {
+  display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;
+  margin-top: 4px; z-index: 1;
+}
+.pc-stat {
+  display: flex; flex-direction: column; align-items: center;
+  background: rgba(255,255,255,0.05);
+  border-radius: 7px; padding: 4px 7px;
+  min-width: 34px;
+}
+.pc-stat-val { font-size: 0.72rem; font-weight: 800; color: #fff; line-height: 1.3; }
+.pc-stat-lbl { font-size: 7px; color: rgba(255,255,255,0.35); letter-spacing: 0.5px; text-transform: uppercase; }
 
 /* ── Focus overlay ───────────────────────────────────────── */
 .focus-overlay {
@@ -462,7 +555,7 @@ onUnmounted(stopAutoRefresh)
 }
 .focus-rank      { font-size: 2.2rem; line-height: 1; }
 .rank-emoji      { font-size: 2.2rem; }
-.focus-avatar-wrap { }
+/* focus-avatar-wrap placeholder */
 .focus-glow-ring {
   padding: 4px; border-radius: 20px;
   background: linear-gradient(135deg, var(--player-color), #4ADE80, #60A5FA);

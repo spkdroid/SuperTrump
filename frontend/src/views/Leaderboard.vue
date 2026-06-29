@@ -54,7 +54,7 @@
           <v-card color="surface" rounded="xl" elevation="0"
             class="pa-4 text-center"
             style="border: 1px solid rgba(74,222,128,0.12);">
-            <div class="text-h5 font-weight-black" :style="`color: ${s.color}`">{{ s.value }}</div>
+            <div class="text-h5 font-weight-black" :class="s.textClass">{{ s.value }}</div>
             <div class="text-caption text-medium-emphasis mt-1">{{ s.label }}</div>
           </v-card>
         </v-col>
@@ -164,10 +164,10 @@ const stats   = ref({})
 function initials(n = '') { return n.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() }
 
 const statCards = computed(() => [
-  { label: 'Players',       value: stats.value.total_players   ?? 0,  color: '#4ADE80' },
-  { label: 'Games Played',  value: stats.value.total_games      ?? 0,  color: '#60A5FA' },
-  { label: 'Rounds',        value: stats.value.total_rounds     ?? 0,  color: '#FBBF24' },
-  { label: 'Avg Bid',       value: stats.value.avg_bid ? Number(stats.value.avg_bid).toFixed(1) : '—', color: '#FCD34D' },
+  { label: 'Players',       value: stats.value.total_players   ?? 0,  textClass: 'text-primary'   },
+  { label: 'Games Played',  value: stats.value.total_games      ?? 0,  textClass: 'text-info'      },
+  { label: 'Rounds',        value: stats.value.total_rounds     ?? 0,  textClass: 'text-warning'   },
+  { label: 'Avg Bid',       value: stats.value.avg_bid ? Number(stats.value.avg_bid).toFixed(1) : '—', textClass: 'text-secondary' },
 ])
 
 const barSeries  = computed(() => [{
@@ -208,7 +208,7 @@ onMounted(async () => {
 
 <style scoped>
 .champion-banner {
-  background: linear-gradient(135deg, #1A3320 0%, #1B2315 100%) !important;
+  background: linear-gradient(135deg, rgba(74,222,128,0.07) 0%, rgba(252,211,77,0.04) 100%) !important;
 }
 .leaderboard-table thead tr th {
   background: rgba(74,222,128,0.04) !important;

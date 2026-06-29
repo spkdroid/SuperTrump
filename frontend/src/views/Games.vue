@@ -113,7 +113,7 @@
                 :color="p.avatar_color"
                 size="28"
                 class="ml-n2"
-                style="border: 2px solid #111A11;"
+                style="border: 2px solid rgb(var(--v-theme-surface));"
               >
                 <span style="font-size: 9px; font-weight: 700; color: rgba(0,0,0,0.7);">
                   {{ initials(p.name) }}
@@ -124,7 +124,7 @@
                 color="surface-variant"
                 size="28"
                 class="ml-n2"
-                style="border: 2px solid #111A11;"
+                style="border: 2px solid rgb(var(--v-theme-surface));"
               >
                 <span style="font-size: 9px;">+{{ game.players.length - 5 }}</span>
               </v-avatar>

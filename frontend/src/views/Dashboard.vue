@@ -16,17 +16,19 @@
     <v-row class="mb-4">
       <v-col v-for="stat in statCards" :key="stat.label" cols="12" sm="6" md="3">
         <v-card
-          :color="stat.bg"
+          color="surface"
           rounded="xl"
           elevation="0"
           class="stat-card pa-5"
-          style="border: 1px solid rgba(74,222,128,0.12);"
+          :class="`stat-accent-${stat.accent}`"
         >
-          <div class="d-flex align-center justify-space-between mb-3">
-            <v-icon :color="stat.iconColor" size="32">{{ stat.icon }}</v-icon>
-            <v-chip :color="stat.iconColor" size="x-small" label>{{ stat.badge }}</v-chip>
+          <div class="d-flex align-center justify-space-between mb-4">
+            <div class="stat-icon-wrap" :class="`si-${stat.accent}`">
+              <v-icon :color="stat.accent" size="20">{{ stat.icon }}</v-icon>
+            </div>
+            <v-chip :color="stat.accent" size="x-small" label variant="tonal">{{ stat.badge }}</v-chip>
           </div>
-          <div class="text-h4 font-weight-black" :style="`color: ${stat.valueColor}`">
+          <div class="text-h3 font-weight-black">
             {{ loading ? '…' : stat.value }}
           </div>
           <div class="text-caption text-medium-emphasis mt-1">{{ stat.label }}</div>
@@ -82,7 +84,7 @@
                       :color="p.avatar_color"
                       size="26"
                       class="ml-n2"
-                      style="border: 2px solid #111A11;"
+                      style="border: 2px solid rgb(var(--v-theme-surface));"
                     >
                       <span class="text-caption font-weight-bold" style="font-size: 9px;">
                         {{ initials(p.name) }}
@@ -93,7 +95,7 @@
                       color="surface-variant"
                       size="26"
                       class="ml-n2"
-                      style="border: 2px solid #111A11;"
+                      style="border: 2px solid rgb(var(--v-theme-surface));"
                     >
                       <span style="font-size: 9px;">+{{ game.players.length - 4 }}</span>
                     </v-avatar>
@@ -182,11 +184,13 @@
                 :key="ref.type"
                 cols="12" sm="6" md="3"
               >
-                <v-card :color="ref.bg" rounded="lg" elevation="0" class="pa-4">
+                <v-card color="surface-variant" rounded="lg" elevation="0" class="pa-4 ref-card" :class="`ref-${ref.accent}`">
                   <div class="text-caption text-medium-emphasis mb-1">{{ ref.type }}</div>
                   <div class="text-subtitle-2 font-weight-bold mb-2">{{ ref.rule }}</div>
-                  <v-chip color="success" size="x-small" class="mr-1">Win: {{ ref.win }}</v-chip>
-                  <v-chip color="error" size="x-small">Lose: {{ ref.lose }}</v-chip>
+                  <div class="d-flex gap-2 flex-wrap">
+                    <v-chip color="success" size="x-small">Win: {{ ref.win }}</v-chip>
+                    <v-chip color="error" size="x-small">Lose: {{ ref.lose }}</v-chip>
+                  </div>
                 </v-card>
               </v-col>
             </v-row>
@@ -211,31 +215,27 @@ const activeGames = computed(() => allGames.value.filter(g => g.status === 'acti
 const statCards = computed(() => [
   {
     icon: 'mdi-cards-playing', label: 'Active Games', badge: 'LIVE',
-    value: stats.value.active_games ?? 0, bg: '#112211',
-    iconColor: 'primary', valueColor: '#4ADE80',
+    value: stats.value.active_games ?? 0, accent: 'primary',
   },
   {
     icon: 'mdi-account-group', label: 'Total Players', badge: 'ALL',
-    value: stats.value.total_players ?? 0, bg: '#12101B',
-    iconColor: 'info', valueColor: '#60A5FA',
+    value: stats.value.total_players ?? 0, accent: 'info',
   },
   {
     icon: 'mdi-layers', label: 'Total Rounds', badge: 'PLAYED',
-    value: stats.value.total_rounds ?? 0, bg: '#1A110B',
-    iconColor: 'warning', valueColor: '#FBBF24',
+    value: stats.value.total_rounds ?? 0, accent: 'warning',
   },
   {
     icon: 'mdi-chart-line', label: 'Avg Bid', badge: 'STATS',
-    value: stats.value.avg_bid ? Number(stats.value.avg_bid).toFixed(1) : '—', bg: '#180B0B',
-    iconColor: 'secondary', valueColor: '#FCD34D',
+    value: stats.value.avg_bid ? Number(stats.value.avg_bid).toFixed(1) : '—', accent: 'secondary',
   },
 ])
 
 const scoringRef = [
-  { type: 'Normal (bid < 40)',      rule: '1× multiplier',  win: 'bid/2',  lose: '−bid',    bg: '#0F1F0F' },
-  { type: 'Honors (bid 40–55)',     rule: '2× multiplier',  win: 'bid',    lose: '−2×bid',  bg: '#0F1A1F' },
-  { type: 'Initial 56',            rule: '4× multiplier',  win: '+112',   lose: '−224',    bg: '#1A0F1A' },
-  { type: 'Upgraded to 56',        rule: '3× multiplier',  win: '+84',    lose: '−168',    bg: '#1A150A' },
+  { type: 'Normal (bid < 40)',  rule: '1× multiplier', win: 'bid/2', lose: '−bid',   accent: 'primary'   },
+  { type: 'Honors (bid 40–55)', rule: '2× multiplier', win: 'bid',   lose: '−2×bid', accent: 'info'      },
+  { type: 'Initial 56',        rule: '4× multiplier', win: '+112',  lose: '−224',   accent: 'error'     },
+  { type: 'Upgraded to 56',    rule: '3× multiplier', win: '+84',   lose: '−168',   accent: 'warning'   },
 ]
 
 function initials(name = '') {
@@ -259,6 +259,42 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.stat-card { transition: transform 0.2s; }
-.stat-card:hover { transform: translateY(-2px); }
+/* ── Stat cards ─────────────────────────────────── */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.05) !important;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.3) !important; }
+.stat-card::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.stat-accent-primary::after   { background: linear-gradient(90deg, transparent, #4ADE80, transparent); }
+.stat-accent-info::after      { background: linear-gradient(90deg, transparent, #60A5FA, transparent); }
+.stat-accent-warning::after   { background: linear-gradient(90deg, transparent, #FBBF24, transparent); }
+.stat-accent-secondary::after { background: linear-gradient(90deg, transparent, #FCD34D, transparent); }
+
+.stat-icon-wrap {
+  width: 42px; height: 42px;
+  border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.si-primary   { background: rgba(74,222,128,0.12); }
+.si-info      { background: rgba(96,165,250,0.12); }
+.si-warning   { background: rgba(251,191,36,0.12); }
+.si-secondary { background: rgba(252,211,77,0.12); }
+
+/* ── Scoring ref cards ─────────────────────────── */
+.ref-card {
+  border-left: 3px solid transparent !important;
+  transition: transform 0.15s;
+}
+.ref-card:hover { transform: translateY(-2px); }
+.ref-primary { border-left-color: #4ADE80 !important; }
+.ref-info    { border-left-color: #60A5FA !important; }
+.ref-error   { border-left-color: #F87171 !important; }
+.ref-warning { border-left-color: #FBBF24 !important; }
 </style>
