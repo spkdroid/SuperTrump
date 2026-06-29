@@ -59,6 +59,10 @@ export const leaderboardAPI = {
   stats:   () => api.get('/leaderboard/stats'),
 }
 
+export const activityAPI = {
+  list: (params) => api.get('/activity', { params }),
+}
+
 export const scoringAPI = {
   calculate: (data) => api.post('/scoring/calculate', data),
 }

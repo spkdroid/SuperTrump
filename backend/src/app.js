@@ -9,6 +9,7 @@ const playersRouter     = require('./routes/players');
 const gamesRouter       = require('./routes/games');
 const roundsRouter      = require('./routes/rounds');
 const leaderboardRouter = require('./routes/leaderboard');
+const activityRouter    = require('./routes/activity');
 const scoringRouter     = require('./routes/scoring');
 
 const app  = express();
@@ -26,6 +27,7 @@ app.use('/api/players',     playersRouter);
 app.use('/api/games',       gamesRouter);
 app.use('/api/rounds',      roundsRouter);
 app.use('/api/leaderboard', leaderboardRouter);
+app.use('/api/activity',    activityRouter);
 app.use('/api/scoring',     scoringRouter);
 
 // Global error handler

@@ -165,6 +165,92 @@
       </v-col>
       </v-row>
 
+      <!-- ── Activity Feed ─────────────────────────────────── -->
+      <v-row class="mt-2 mb-2">
+        <v-col cols="12">
+          <v-card color="surface" rounded="xl" elevation="0" class="st-panel">
+            <v-card-title class="pa-5 pb-2 d-flex align-center flex-wrap gap-2">
+              <v-icon color="primary" class="mr-1">mdi-timeline-text-outline</v-icon>
+              Activity Feed
+              <v-spacer />
+              <v-chip size="x-small" label color="surface-variant">
+                {{ filteredActivityEvents.length }} events
+              </v-chip>
+              <v-btn
+                size="small"
+                variant="text"
+                color="primary"
+                prepend-icon="mdi-refresh"
+                :loading="activityLoading"
+                @click="fetchActivity"
+              >
+                Refresh
+              </v-btn>
+            </v-card-title>
+
+            <v-card-text class="pa-5 pt-3">
+              <div class="d-flex align-center flex-wrap gap-2 mb-3">
+                <v-btn-toggle v-model="activityFilter" density="compact" rounded="lg" color="primary">
+                  <v-btn value="all" size="small">All</v-btn>
+                  <v-btn value="highlights" size="small">Highlights</v-btn>
+                  <v-btn value="mine" size="small">My Activity</v-btn>
+                </v-btn-toggle>
+                <div class="text-caption text-medium-emphasis">
+                  Updated {{ lastActivityRefresh ? relativeTime(lastActivityRefresh) : 'just now' }}
+                </div>
+              </div>
+
+              <div v-if="activityLoading" class="pa-6 text-center">
+                <v-progress-circular indeterminate color="primary" />
+              </div>
+
+              <div v-else-if="!filteredActivityEvents.length" class="pa-6 text-center text-medium-emphasis">
+                <v-icon size="42" class="mb-2 opacity-30">mdi-timeline-remove-outline</v-icon>
+                <div>No activity available for this filter yet.</div>
+              </div>
+
+              <v-list v-else bg-color="transparent" class="activity-list pa-0">
+                <v-list-item
+                  v-for="event in filteredActivityEvents"
+                  :key="event.id"
+                  class="activity-item px-3 py-2"
+                  rounded="lg"
+                  @click="openActivity(event)"
+                >
+                  <template #prepend>
+                    <v-avatar v-if="event.player_color" :color="event.player_color" size="30" rounded="lg" class="mr-3">
+                      <span class="st-avatar-initial-sm">{{ initials(event.player_name || 'P') }}</span>
+                    </v-avatar>
+                    <div v-else class="activity-icon-wrap mr-3">
+                      <v-icon :color="event.color || 'primary'" size="16">{{ event.icon || 'mdi-bell-outline' }}</v-icon>
+                    </div>
+                  </template>
+
+                  <v-list-item-title class="text-body-2 font-weight-medium">
+                    {{ event.title }}
+                  </v-list-item-title>
+
+                  <v-list-item-subtitle class="text-caption">
+                    {{ event.subtitle }}
+                  </v-list-item-subtitle>
+
+                  <template #append>
+                    <div class="text-right d-flex align-center gap-2">
+                      <v-chip size="x-small" label :color="event.color || 'info'" variant="tonal">
+                        {{ toneLabel(event.type) }}
+                      </v-chip>
+                      <span class="text-caption text-medium-emphasis">
+                        {{ relativeTime(event.occurred_at) }}
+                      </span>
+                    </div>
+                  </template>
+                </v-list-item>
+              </v-list>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+
       <!-- ── Scoring Quick Reference ─────────────────────────── -->
       <v-row class="mt-2">
         <v-col cols="12">
@@ -200,14 +286,39 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { gamesAPI, leaderboardAPI } from '@/api'
+import { useRouter } from 'vue-router'
+import { activityAPI, gamesAPI, leaderboardAPI } from '@/api'
+import { useAppStore } from '@/store'
 
+const router     = useRouter()
+const store      = useAppStore()
 const loading    = ref(true)
 const allGames   = ref([])
 const topPlayers = ref([])
 const stats      = ref({})
+const activityLoading = ref(false)
+const activityEvents = ref([])
+const activityFilter = ref('all')
+const lastActivityRefresh = ref(null)
 
 const activeGames = computed(() => allGames.value.filter(g => g.status === 'active').slice(0, 5))
+
+const filteredActivityEvents = computed(() => {
+  const username = store.currentUser?.username
+
+  return activityEvents.value.filter((event) => {
+    if (activityFilter.value === 'highlights') {
+      return ['high_bid_won', 'high_bid_lost', 'game_completed', 'player_hot_streak'].includes(event.type)
+    }
+
+    if (activityFilter.value === 'mine') {
+      if (!username) return false
+      return String(event.player_name || '').toLowerCase() === String(username).toLowerCase()
+    }
+
+    return true
+  }).slice(0, 20)
+})
 
 const statCards = computed(() => [
   {
@@ -239,6 +350,49 @@ function initials(name = '') {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 }
 
+function toneLabel(type) {
+  const labels = {
+    high_bid_won: 'Highlight',
+    high_bid_lost: 'Alert',
+    game_completed: 'Result',
+    game_started: 'New Game',
+    player_hot_streak: 'Streak',
+    player_performance: 'Player',
+    round_recorded: 'Round',
+  }
+  return labels[type] || 'Update'
+}
+
+function relativeTime(value) {
+  if (!value) return 'just now'
+  const when = new Date(value)
+  if (Number.isNaN(when.getTime())) return 'just now'
+
+  const seconds = Math.max(1, Math.floor((Date.now() - when.getTime()) / 1000))
+  if (seconds < 60) return `${seconds}s ago`
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  return `${days}d ago`
+}
+
+async function fetchActivity() {
+  activityLoading.value = true
+  try {
+    const res = await activityAPI.list({ limit: 30 })
+    activityEvents.value = res.data.events || []
+    lastActivityRefresh.value = new Date().toISOString()
+  } finally {
+    activityLoading.value = false
+  }
+}
+
+function openActivity(event) {
+  if (event?.route) router.push(event.route)
+}
+
 onMounted(async () => {
   try {
     const [gRes, lRes, sRes] = await Promise.all([
@@ -249,6 +403,7 @@ onMounted(async () => {
     allGames.value   = gRes.data
     topPlayers.value = lRes.data.slice(0, 5)
     stats.value      = sRes.data
+    await fetchActivity()
   } finally {
     loading.value = false
   }
@@ -294,4 +449,30 @@ onMounted(async () => {
 .ref-info    { border-left-color: rgb(var(--st-primary-dark-rgb)) !important; }
 .ref-error   { border-left-color: #D93025 !important; }
 .ref-warning { border-left-color: #F0A202 !important; }
+
+.activity-list {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.activity-item {
+  border: 1px solid transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  cursor: pointer;
+}
+
+.activity-item:hover {
+  background: rgba(var(--st-primary-rgb), 0.04);
+  border-color: rgba(var(--st-primary-rgb), 0.14);
+}
+
+.activity-icon-wrap {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(var(--st-primary-rgb), 0.08);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 </style>
