@@ -177,7 +177,7 @@ router.post('/:id/rounds', async (req, res, next) => {
   const {
     bidderId, bidAmount, bidType, trumpSuit,
     partnerIds, opponentIds,
-    pointsWonByBiddingTeam, partnerCardsAsked, notes,
+    pointsWonByBiddingTeam, partnerCardsAsked, notes, isLastRound,
   } = req.body;
 
   if (!bidderId)                        return res.status(400).json({ error: 'bidderId is required' });
@@ -192,7 +192,7 @@ router.post('/:id/rounds', async (req, res, next) => {
 
   const bidWon = pts >= bid;
   const { bidderScore, partnerScoreEach, partnerTotalScore } =
-    calculateScores(bid, bidType, bidWon, partnerIds.length);
+    calculateScores(bid, bidType, bidWon, partnerIds.length, !!isLastRound);
 
   const client = await pool.connect();
   try {

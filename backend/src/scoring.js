@@ -46,15 +46,17 @@ function getWinAmount(bidAmount, bidType) {
   return getScoreAmounts(bidAmount, bidType).bidderWin;
 }
 
-function calculateScores(bidAmount, bidType, bidWon, numPartners = 0) {
+function calculateScores(bidAmount, bidType, bidWon, numPartners = 0, isLastRound = false) {
   const { bidderWin, bidderLoss, partnerEach } = getScoreAmounts(bidAmount, bidType);
+  // Last Round: every score is doubled (win or loss).
+  const multiplier = isLastRound ? 2 : 1;
 
-  const bidderScore       = bidWon ? bidderWin : -bidderLoss;
+  const bidderScore       = (bidWon ? bidderWin : -bidderLoss) * multiplier;
   // Each partner INDIVIDUALLY gets ±floor(bid/2) — NOT divided among partners.
-  const partnerScoreEach  = numPartners > 0 ? (bidWon ? partnerEach : -partnerEach) : 0;
+  const partnerScoreEach  = numPartners > 0 ? (bidWon ? partnerEach : -partnerEach) * multiplier : 0;
   const partnerTotalScore = numPartners * partnerScoreEach;
 
-  return { bidderScore, partnerScoreEach, partnerTotalScore, winAmount: bidderWin };
+  return { bidderScore, partnerScoreEach, partnerTotalScore, winAmount: bidderWin * multiplier };
 }
 
 function describeScoringFormula(bidAmount, bidType, bidWon) {

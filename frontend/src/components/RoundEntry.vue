@@ -133,17 +133,79 @@
                 </v-btn>
               </div>
 
-              <!-- Partner cards asked (free text) -->
-              <v-text-field
-                v-model="form.partnerCardsAsked"
-                label="Partner card(s) asked (optional)"
-                placeholder="e.g. Jack of Hearts, Joker"
-                variant="outlined"
-                color="primary"
-                density="compact"
-                class="mt-5"
-                hide-details
-              />
+              <!-- ── Partner Cards Picker ─────────────────── -->
+              <div class="mt-5">
+                <div class="d-flex align-center mb-2">
+                  <span class="text-subtitle-2 text-medium-emphasis">Partner Card(s) Asked</span>
+                  <v-chip size="x-small" class="ml-2"
+                    :color="form.partnerCards.length ? 'primary' : undefined">
+                    {{ form.partnerCards.length }}&nbsp;/&nbsp;{{ form.partnerCards.includes('JOKER') ? 1 : 2 }}
+                  </v-chip>
+                  <v-spacer />
+                  <v-btn v-if="form.partnerCards.length" variant="text" size="x-small"
+                    color="error" @click="form.partnerCards = []">Clear</v-btn>
+                </div>
+
+                <!-- Joker -->
+                <div class="d-flex justify-center mb-3">
+                  <div
+                    class="joker-card"
+                    :class="{
+                      'pc-selected': form.partnerCards.includes('JOKER'),
+                      'pc-disabled': !form.partnerCards.includes('JOKER') && isPartnerCardDisabled('JOKER'),
+                    }"
+                    @click="togglePartnerCard('JOKER')"
+                  >
+                    <div class="joker-star">★</div>
+                    <div class="joker-emoji">🃏</div>
+                    <div class="joker-name">SUPER TRUMP</div>
+                    <v-icon v-if="form.partnerCards.includes('JOKER')" class="pc-check" size="14"
+                      color="success">mdi-check-circle</v-icon>
+                  </div>
+                </div>
+
+                <!-- Suit column headers -->
+                <div class="cards-table">
+                  <div class="rank-label-cell"></div>
+                  <div v-for="s in PARTNER_SUITS" :key="s.key"
+                    class="suit-header-cell" :style="{ color: s.color }">
+                    {{ s.icon }}
+                  </div>
+
+                  <!-- Rank rows -->
+                  <template v-for="r in PARTNER_RANKS" :key="r.key">
+                    <div class="rank-label-cell">{{ r.key }}</div>
+                    <div v-for="s in PARTNER_SUITS" :key="s.key">
+                      <div
+                        class="mini-card"
+                        :class="{
+                          'pc-selected': form.partnerCards.includes(`${r.key}_${s.key}`),
+                          'pc-disabled': !form.partnerCards.includes(`${r.key}_${s.key}`) && isPartnerCardDisabled(`${r.key}_${s.key}`),
+                        }"
+                        @click="togglePartnerCard(`${r.key}_${s.key}`)"
+                      >
+                        <span class="mc-rank-tl" :style="{ color: s.color }">{{ r.key }}</span>
+                        <span class="mc-suit"    :style="{ color: s.color }">{{ s.icon }}</span>
+                        <span class="mc-rank-br" :style="{ color: s.color }">{{ r.key }}</span>
+                        <v-icon v-if="form.partnerCards.includes(`${r.key}_${s.key}`)"
+                          class="pc-check" size="12" color="success">mdi-check-circle</v-icon>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+
+                <!-- Selected summary chips -->
+                <div v-if="form.partnerCards.length" class="mt-3 d-flex flex-wrap gap-1">
+                  <v-chip
+                    v-for="id in form.partnerCards" :key="id"
+                    color="primary" size="small" label closable
+                    @click:close="togglePartnerCard(id)"
+                  >
+                    {{ partnerCardLabel(id) }}
+                  </v-chip>
+                </div>
+              </div>
+
             </div>
           </v-stepper-window-item>
 
@@ -412,6 +474,29 @@
             <div class="pa-5">
               <div class="text-subtitle-2 text-medium-emphasis mb-4">Score Breakdown</div>
 
+              <!-- Last Round 2× notice -->
+              <v-alert
+                v-if="lastRound"
+                color="warning"
+                variant="tonal"
+                density="compact"
+                rounded="lg"
+                border="start"
+                class="mb-4"
+              >
+                <div class="d-flex align-center gap-2">
+                  <span style="font-size:20px">🏁</span>
+                  <div class="text-body-2">
+                    <strong>Last Round &mdash; All scores &times;2!</strong>
+                    <div class="text-caption mt-1 text-medium-emphasis">
+                      Win {{ preview?.bidderScore !== undefined && preview.bidderScore > 0 ? '+' : '' }}{{ preview?.bidderScore }}
+                      &nbsp;·&nbsp; Each partner
+                      {{ preview?.partnerScoreEach !== undefined && preview.partnerScoreEach > 0 ? '+' : '' }}{{ preview?.partnerScoreEach }}
+                    </div>
+                  </div>
+                </div>
+              </v-alert>
+
               <!-- Formula chip -->
               <v-chip
                 :color="bidWon ? 'success' : 'error'"
@@ -567,9 +652,9 @@ const form = ref({
   bidderId:               null,
   bidAmount:              28,
   wasUpgradedTo56:        false,
-  bidAmountOnEnterStep3:  null,   // snapshot when step 3 is entered
+  bidAmountOnEnterStep3:  null,
   trumpSuit:              'spades',
-  partnerCardsAsked:      '',
+  partnerCards:           [],   // array of selected card IDs e.g. ['J_H', 'JOKER']
   partnerIds:             [],
   pointsWon:              0,
   notes:                  '',
@@ -582,7 +667,7 @@ watch(() => props.modelValue, v => {
     form.value = {
       bidderId: null, bidAmount: 28, wasUpgradedTo56: false,
       bidAmountOnEnterStep3: null,
-      trumpSuit: 'spades', partnerCardsAsked: '',
+      trumpSuit: 'spades', partnerCards: [],
       partnerIds: [], pointsWon: 0, notes: '',
     }
   }
@@ -637,9 +722,54 @@ const bidWon = computed(() => form.value.pointsWon >= form.value.bidAmount)
 
 const preview = computed(() =>
   form.value.partnerIds.length >= 0
-    ? calculateScores(form.value.bidAmount, computedBidType.value, bidWon.value, form.value.partnerIds.length)
+    ? calculateScores(form.value.bidAmount, computedBidType.value, bidWon.value, form.value.partnerIds.length, props.lastRound)
     : null
 )
+
+// ── Partner card picker data ───────────────────────────────────────────
+const PARTNER_SUITS = [
+  { key: 'S', icon: '♠', color: '#1a1a1a', name: 'Spades'   },
+  { key: 'C', icon: '♣', color: '#1a1a1a', name: 'Clubs'    },
+  { key: 'H', icon: '♥', color: '#DC2626', name: 'Hearts'   },
+  { key: 'D', icon: '♦', color: '#DC2626', name: 'Diamonds' },
+]
+const PARTNER_RANKS = [
+  { key: 'J',  name: 'Jack'  },
+  { key: '9',  name: '9'     },
+  { key: 'A',  name: 'Ace'   },
+  { key: '10', name: '10'    },
+  { key: 'K',  name: 'King'  },
+  { key: 'Q',  name: 'Queen' },
+]
+
+function partnerCardLabel(id) {
+  if (id === 'JOKER') return 'Super Trump (Joker)'
+  const parts    = id.split('_')
+  const rank     = parts[0]
+  const suitKey  = parts[1]
+  const suitName = PARTNER_SUITS.find(s => s.key === suitKey)?.name || suitKey
+  const rankName = PARTNER_RANKS.find(r => r.key === rank)?.name   || rank
+  return `${rankName} of ${suitName}`
+}
+
+function isPartnerCardDisabled(id) {
+  // If Joker is selected, all other cards are locked
+  if (form.value.partnerCards.includes('JOKER') && id !== 'JOKER') return true
+  // Max 2 cards reached and this one isn’t selected
+  if (form.value.partnerCards.length >= 2 && !form.value.partnerCards.includes(id)) return true
+  return false
+}
+
+function togglePartnerCard(id) {
+  const cards = form.value.partnerCards
+  const idx   = cards.indexOf(id)
+  if (idx >= 0) { cards.splice(idx, 1); return }
+  if (isPartnerCardDisabled(id)) return
+  if (id === 'JOKER') { form.value.partnerCards = ['JOKER']; return }
+  // If Joker was previously selected, replace it
+  if (cards.includes('JOKER')) { form.value.partnerCards = [id]; return }
+  cards.push(id)
+}
 
 const suitOptions = [
   { value: 'spades',   icon: '♠', label: 'Spades',   color: 'grey-lighten-1', textColor: '#E2F4E6' },
@@ -676,8 +806,9 @@ async function saveRound() {
       partnerIds:                form.value.partnerIds,
       opponentIds:               opponentIds.value,
       pointsWonByBiddingTeam:    form.value.pointsWon,
-      partnerCardsAsked:         form.value.partnerCardsAsked,
+      partnerCardsAsked:         form.value.partnerCards.map(id => partnerCardLabel(id)).join(', '),
       notes:                     form.value.notes,
+      isLastRound:               props.lastRound,
     })
     emit('saved')
   } finally { saving.value = false }
@@ -711,5 +842,125 @@ async function saveRound() {
   background: rgba(74,222,128,0.06) !important;
   color: #9CA3AF !important;
   font-size: 11px;
+}
+
+/* ─────────── Card picker ───────────────────────────────────── */
+.cards-table {
+  display: grid;
+  grid-template-columns: 24px repeat(4, 1fr);
+  gap: 5px;
+  align-items: center;
+  justify-items: center;
+}
+.suit-header-cell {
+  font-size: 18px;
+  text-align: center;
+  font-weight: 700;
+  line-height: 1;
+  padding-bottom: 2px;
+}
+.rank-label-cell {
+  font-size: 10px;
+  font-weight: 700;
+  color: #9CA3AF;
+  text-align: right;
+  padding-right: 2px;
+  align-self: center;
+}
+
+/* Mini playing card */
+.mini-card {
+  position: relative;
+  width: 100%;
+  max-width: 58px;
+  aspect-ratio: 5 / 7;
+  border-radius: 6px;
+  background: #f8f4ec;
+  border: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 3px 3px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+  transition: transform 0.13s, box-shadow 0.13s, border-color 0.13s;
+  user-select: none;
+}
+.mini-card:hover:not(.pc-disabled) {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 18px rgba(0,0,0,0.55);
+}
+.mini-card.pc-selected {
+  border-color: #4ADE80;
+  background: #f0fdf4;
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(74,222,128,0.35);
+}
+.mini-card.pc-disabled {
+  opacity: 0.22;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.mc-rank-tl {
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  align-self: flex-start;
+  letter-spacing: -0.5px;
+}
+.mc-suit {
+  font-size: 17px;
+  line-height: 1;
+}
+.mc-rank-br {
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  align-self: flex-end;
+  transform: rotate(180deg);
+  letter-spacing: -0.5px;
+}
+
+/* Joker card */
+.joker-card {
+  position: relative;
+  width: 130px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1c1200, #2e1e00, #1a1008);
+  border: 2px solid #92400e;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 0 10px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.5), 0 0 0 1px rgba(252,211,77,0.15);
+  transition: transform 0.13s, box-shadow 0.13s, border-color 0.13s;
+  user-select: none;
+}
+.joker-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px rgba(252,211,77,0.22);
+}
+.joker-card.pc-selected {
+  border-color: #FCD34D;
+  box-shadow: 0 6px 24px rgba(252,211,77,0.45);
+  transform: translateY(-5px);
+}
+.joker-card.pc-disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.joker-star  { font-size: 22px; color: #FCD34D; line-height: 1; }
+.joker-emoji { font-size: 30px; line-height: 1; }
+.joker-name  {
+  font-size: 10px; font-weight: 800; letter-spacing: 2.5px;
+  color: #FCD34D; text-align: center;
+}
+.pc-check {
+  position: absolute; top: 3px; right: 3px;
 }
 </style>
