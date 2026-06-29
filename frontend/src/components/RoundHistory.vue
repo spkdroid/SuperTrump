@@ -98,6 +98,7 @@
           </td>
           <td class="pr-5 text-right">
             <v-btn
+              v-if="props.canManage"
               icon="mdi-delete-outline"
               size="x-small"
               variant="text"
@@ -153,7 +154,7 @@
     </v-table>
 
     <!-- Delete Confirm -->
-    <v-dialog v-model="deleteDialog" max-width="380">
+    <v-dialog v-if="props.canManage" v-model="deleteDialog" max-width="380">
       <v-card color="surface" rounded="xl">
         <v-card-title class="pa-5 pb-3">
           <v-icon color="error" class="mr-2">mdi-undo</v-icon>
@@ -177,7 +178,10 @@ import { ref, computed } from 'vue'
 import { roundsAPI } from '@/api'
 import { BID_TYPE_LABELS, SUIT_META } from '@/utils/scoring'
 
-const props = defineProps({ rounds: { type: Array, default: () => [] } })
+const props = defineProps({
+  rounds: { type: Array, default: () => [] },
+  canManage: { type: Boolean, default: true },
+})
 const emit  = defineEmits(['delete'])
 
 const expanded     = ref(null)
@@ -198,7 +202,11 @@ function suitIcon(s)  { return SUIT_META[s]?.icon  || '?' }
 function suitColor(s) { return SUIT_META[s]?.color || '#9CA3AF' }
 function suitLabel(s) { return SUIT_META[s]?.label || '—' }
 
-function confirmDelete(round) { deletingRound.value = round; deleteDialog.value = true }
+function confirmDelete(round) {
+  if (!props.canManage) return
+  deletingRound.value = round
+  deleteDialog.value = true
+}
 
 async function deleteRound() {
   deleting.value = true

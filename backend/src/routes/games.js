@@ -1,9 +1,12 @@
 const router = require('express').Router();
 const { pool } = require('../db');
 const { calculateScores } = require('../scoring');
+const { requireUser, canManageGame } = require('../middleware/auth');
 
 const GAME_WITH_PLAYERS = `
   SELECT g.*,
+    ou.username AS owner_username,
+    ou.role AS owner_role,
     COALESCE(
       json_agg(
         json_build_object(
@@ -18,17 +21,44 @@ const GAME_WITH_PLAYERS = `
       '[]'::json
     ) AS players
   FROM games g
+  LEFT JOIN users ou        ON ou.id = g.owner_user_id
   LEFT JOIN game_players gp ON gp.game_id = g.id
   LEFT JOIN players p       ON p.id = gp.player_id
 `;
+
+async function getGameOwner(gameId) {
+  const result = await pool.query(
+    `SELECT id, owner_user_id FROM games WHERE id = $1`,
+    [gameId]
+  );
+  return result.rows[0] || null;
+}
+
+function denyIfCannotManage(req, res, game) {
+  if (!game) {
+    res.status(404).json({ error: 'Game not found' });
+    return true;
+  }
+
+  if (!canManageGame(req.authUser, game.owner_user_id)) {
+    res.status(403).json({ error: 'Only the game owner or admin can modify this game' });
+    return true;
+  }
+
+  return false;
+}
 
 // GET /api/games
 router.get('/', async (req, res, next) => {
   try {
     const { status } = req.query;
-    const where  = status ? `WHERE g.status = '${status}'` : '';
+    const values = [];
+    const where  = status ? 'WHERE g.status = $1' : '';
+    if (status) values.push(status);
+
     const result = await pool.query(
-      `${GAME_WITH_PLAYERS} ${where} GROUP BY g.id ORDER BY g.updated_at DESC`
+      `${GAME_WITH_PLAYERS} ${where} GROUP BY g.id, ou.id ORDER BY g.updated_at DESC`,
+      values
     );
     res.json(result.rows);
   } catch (err) { next(err); }
@@ -38,7 +68,7 @@ router.get('/', async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
   try {
     const result = await pool.query(
-      `${GAME_WITH_PLAYERS} WHERE g.id = $1 GROUP BY g.id`,
+      `${GAME_WITH_PLAYERS} WHERE g.id = $1 GROUP BY g.id, ou.id`,
       [req.params.id]
     );
     if (!result.rows.length) return res.status(404).json({ error: 'Game not found' });
@@ -47,7 +77,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // POST /api/games
-router.post('/', async (req, res, next) => {
+router.post('/', requireUser, async (req, res, next) => {
   const { name, playerIds } = req.body;
   if (!Array.isArray(playerIds)) {
     return res.status(400).json({ error: 'playerIds must be an array' });
@@ -81,8 +111,14 @@ router.post('/', async (req, res, next) => {
     }
 
     const gRes = await client.query(
-      `INSERT INTO games (name, num_players) VALUES ($1, $2) RETURNING *`,
-      [name?.trim() || `Game ${new Date().toLocaleDateString()}`, normalizedPlayerIds.length]
+      `INSERT INTO games (name, num_players, owner_user_id)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [
+        name?.trim() || `Game ${new Date().toLocaleDateString()}`,
+        normalizedPlayerIds.length,
+        req.authUser.id,
+      ]
     );
     const game = gRes.rows[0];
 
@@ -96,7 +132,8 @@ router.post('/', async (req, res, next) => {
     await client.query('COMMIT');
 
     const full = await pool.query(
-      `${GAME_WITH_PLAYERS} WHERE g.id = $1 GROUP BY g.id`, [game.id]
+      `${GAME_WITH_PLAYERS} WHERE g.id = $1 GROUP BY g.id, ou.id`,
+      [game.id]
     );
     res.status(201).json(full.rows[0]);
   } catch (err) {
@@ -111,8 +148,11 @@ router.post('/', async (req, res, next) => {
 });
 
 // PUT /api/games/:id  (rename / status change only – scores are managed via rounds)
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', requireUser, async (req, res, next) => {
   try {
+    const game = await getGameOwner(req.params.id);
+    if (denyIfCannotManage(req, res, game)) return;
+
     const { name } = req.body;
     const result = await pool.query(
       `UPDATE games SET name = COALESCE($1, name), updated_at = NOW()
@@ -125,8 +165,11 @@ router.put('/:id', async (req, res, next) => {
 });
 
 // DELETE /api/games/:id
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', requireUser, async (req, res, next) => {
   try {
+    const game = await getGameOwner(req.params.id);
+    if (denyIfCannotManage(req, res, game)) return;
+
     const result = await pool.query(
       `DELETE FROM games WHERE id = $1 RETURNING id`, [req.params.id]
     );
@@ -136,9 +179,13 @@ router.delete('/:id', async (req, res, next) => {
 });
 
 // POST /api/games/:id/complete
-router.post('/:id/complete', async (req, res, next) => {
-  const client = await pool.connect();
+router.post('/:id/complete', requireUser, async (req, res, next) => {
   try {
+    const game = await getGameOwner(req.params.id);
+    if (denyIfCannotManage(req, res, game)) return;
+
+    const client = await pool.connect();
+    try {
     await client.query('BEGIN');
 
     // Assign final ranks
@@ -188,44 +235,54 @@ router.post('/:id/complete', async (req, res, next) => {
       );
     }
 
-    await client.query('COMMIT');
+      await client.query('COMMIT');
 
-    const full = await pool.query(
-      `${GAME_WITH_PLAYERS} WHERE g.id = $1 GROUP BY g.id`, [req.params.id]
-    );
-    res.json(full.rows[0]);
+      const full = await pool.query(
+        `${GAME_WITH_PLAYERS} WHERE g.id = $1 GROUP BY g.id, ou.id`,
+        [req.params.id]
+      );
+      res.json(full.rows[0]);
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   } catch (err) {
-    await client.query('ROLLBACK');
     next(err);
-  } finally { client.release(); }
+  }
 });
 
 // POST /api/games/:id/rounds  – record a new round and update scores
-router.post('/:id/rounds', async (req, res, next) => {
-  const gameId = req.params.id;
-  const {
-    bidderId, bidAmount, bidType, trumpSuit,
-    partnerIds, opponentIds,
-    pointsWonByBiddingTeam, partnerCardsAsked, notes, isLastRound,
-  } = req.body;
-
-  if (!bidderId)                        return res.status(400).json({ error: 'bidderId is required' });
-  const bid = parseInt(bidAmount, 10);
-  if (isNaN(bid) || bid < 28 || bid > 56) return res.status(400).json({ error: 'bidAmount must be between 28 and 56' });
-  if (!bidType)                          return res.status(400).json({ error: 'bidType is required' });
-  if (!Array.isArray(partnerIds))        return res.status(400).json({ error: 'partnerIds must be an array' });
-  if (!Array.isArray(opponentIds))       return res.status(400).json({ error: 'opponentIds must be an array' });
-
-  const pts = parseInt(pointsWonByBiddingTeam, 10);
-  if (isNaN(pts) || pts < 0 || pts > 56) return res.status(400).json({ error: 'pointsWonByBiddingTeam must be 0–56' });
-
-  const bidWon = pts >= bid;
-  const { bidderScore, partnerScoreEach, partnerTotalScore } =
-    calculateScores(bid, bidType, bidWon, partnerIds.length, !!isLastRound);
-
-  const client = await pool.connect();
+router.post('/:id/rounds', requireUser, async (req, res, next) => {
   try {
-    await client.query('BEGIN');
+    const gameId = req.params.id;
+    const game = await getGameOwner(gameId);
+    if (denyIfCannotManage(req, res, game)) return;
+
+    const {
+      bidderId, bidAmount, bidType, trumpSuit,
+      partnerIds, opponentIds,
+      pointsWonByBiddingTeam, partnerCardsAsked, notes, isLastRound,
+    } = req.body;
+
+    if (!bidderId)                        return res.status(400).json({ error: 'bidderId is required' });
+    const bid = parseInt(bidAmount, 10);
+    if (isNaN(bid) || bid < 28 || bid > 56) return res.status(400).json({ error: 'bidAmount must be between 28 and 56' });
+    if (!bidType)                          return res.status(400).json({ error: 'bidType is required' });
+    if (!Array.isArray(partnerIds))        return res.status(400).json({ error: 'partnerIds must be an array' });
+    if (!Array.isArray(opponentIds))       return res.status(400).json({ error: 'opponentIds must be an array' });
+
+    const pts = parseInt(pointsWonByBiddingTeam, 10);
+    if (isNaN(pts) || pts < 0 || pts > 56) return res.status(400).json({ error: 'pointsWonByBiddingTeam must be 0–56' });
+
+    const bidWon = pts >= bid;
+    const { bidderScore, partnerScoreEach, partnerTotalScore } =
+      calculateScores(bid, bidType, bidWon, partnerIds.length, !!isLastRound);
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
 
     const rnRes = await client.query(
       `SELECT COALESCE(MAX(round_number), 0) + 1 AS next_round FROM rounds WHERE game_id = $1`,
@@ -289,12 +346,17 @@ router.post('/:id/rounds', async (req, res, next) => {
       [roundNumber, gameId]
     );
 
-    await client.query('COMMIT');
-    res.status(201).json(round);
+      await client.query('COMMIT');
+      res.status(201).json(round);
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   } catch (err) {
-    await client.query('ROLLBACK');
     next(err);
-  } finally { client.release(); }
+  }
 });
 
 // GET /api/games/:id/leaderboard

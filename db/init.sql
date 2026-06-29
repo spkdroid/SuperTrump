@@ -17,10 +17,21 @@ CREATE TABLE IF NOT EXISTS players (
     updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
+-- App Users (lightweight auth layer)
+CREATE TABLE IF NOT EXISTS users (
+    id            SERIAL PRIMARY KEY,
+    username      VARCHAR(64)  NOT NULL UNIQUE,
+    role          VARCHAR(16)  NOT NULL DEFAULT 'user'
+                     CHECK (role IN ('user', 'admin')),
+    created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
 -- Games
 CREATE TABLE IF NOT EXISTS games (
     id             SERIAL PRIMARY KEY,
     name           VARCHAR(100) NOT NULL DEFAULT 'New Game',
+    owner_user_id  INTEGER REFERENCES users(id),
     num_players    INTEGER      NOT NULL CHECK (num_players BETWEEN 3 AND 10),
     status         VARCHAR(20)  NOT NULL DEFAULT 'active'
                        CHECK (status IN ('active', 'completed')),
@@ -84,6 +95,12 @@ CREATE INDEX IF NOT EXISTS idx_round_players_player_id  ON round_players(player_
 CREATE INDEX IF NOT EXISTS idx_round_players_game_id    ON round_players(game_id);
 CREATE INDEX IF NOT EXISTS idx_game_players_game_id     ON game_players(game_id);
 CREATE INDEX IF NOT EXISTS idx_game_players_player_id   ON game_players(player_id);
+CREATE INDEX IF NOT EXISTS idx_games_owner_user_id      ON games(owner_user_id);
+
+-- Ensure a default admin user exists for first-time ownership backfill
+INSERT INTO users (username, role)
+VALUES ('admin', 'admin')
+ON CONFLICT (username) DO NOTHING;
 
 -- Seed some avatar colours (no data, just ensuring schema is ready)
 -- INSERT INTO players (name, avatar_color) VALUES ('Sample', '#4CAF50');

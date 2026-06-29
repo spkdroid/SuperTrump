@@ -6,13 +6,49 @@
         <div>
           <h1 class="st-page-title">Players</h1>
           <p class="st-page-subtitle">
-            {{ players.length }} registered player{{ players.length !== 1 ? 's' : '' }}
+            {{ filteredPlayers.length }} shown · {{ players.length }} total
           </p>
         </div>
         <v-spacer />
         <v-btn color="primary" prepend-icon="mdi-account-plus" rounded="lg" @click="openCreate">
           Add Player
         </v-btn>
+      </div>
+
+      <div class="d-flex align-center flex-wrap gap-3 mb-4">
+        <v-text-field
+          v-model="search"
+          variant="outlined"
+          density="compact"
+          color="primary"
+          hide-details
+          clearable
+          prepend-inner-icon="mdi-magnify"
+          label="Search players"
+          class="players-search"
+        />
+        <v-select
+          v-model="activityFilter"
+          :items="activityOptions"
+          item-title="title"
+          item-value="value"
+          label="Activity"
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="players-select"
+        />
+        <v-select
+          v-model="sortBy"
+          :items="sortOptions"
+          item-title="title"
+          item-value="value"
+          label="Sort"
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="players-select"
+        />
       </div>
 
       <!-- Loading -->
@@ -27,10 +63,15 @@
         <v-btn class="mt-4" color="primary" rounded="lg" @click="openCreate">Add First Player</v-btn>
       </div>
 
+      <div v-else-if="!filteredPlayers.length" class="text-center py-16 text-medium-emphasis">
+        <v-icon size="64" class="mb-3 opacity-30">mdi-filter-remove-outline</v-icon>
+        <div class="text-h6">No players match your filters</div>
+      </div>
+
       <!-- Player Grid -->
       <v-row v-else>
         <v-col
-          v-for="player in players"
+          v-for="player in filteredPlayers"
           :key="player.id"
           cols="12" sm="6" md="4" lg="3"
         >
@@ -184,7 +225,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { playersAPI } from '@/api'
 import { useAppStore } from '@/store'
 
@@ -192,6 +233,9 @@ const store   = useAppStore()
 const loading = ref(true)
 const saving  = ref(false)
 const players = ref([])
+const search = ref('')
+const sortBy = ref('score_desc')
+const activityFilter = ref('all')
 
 const formDialog     = ref(false)
 const deleteDialog   = ref(false)
@@ -201,6 +245,19 @@ const deletingPlayer = ref(null)
 const avatarColors = [
   '#E91E63','#9C27B0','#3F51B5','#2196F3','#00BCD4',
   '#4CAF50','#FF9800','#F44336','#009688','#FF5722',
+]
+
+const sortOptions = [
+  { title: 'Score (High-Low)', value: 'score_desc' },
+  { title: 'Name (A-Z)', value: 'name_asc' },
+  { title: 'Wins (High-Low)', value: 'wins_desc' },
+  { title: 'Bid Win % (High-Low)', value: 'bid_desc' },
+]
+
+const activityOptions = [
+  { title: 'All Players', value: 'all' },
+  { title: 'Played Games', value: 'active' },
+  { title: 'No Games Yet', value: 'new' },
 ]
 
 const form = ref({ name: '', avatar_color: '#4CAF50' })
@@ -214,6 +271,27 @@ function winRate(p) {
 function bidRate(p) {
   return p.rounds_as_bidder ? Math.round(p.rounds_won_as_bidder / p.rounds_as_bidder * 100) : 0
 }
+
+const filteredPlayers = computed(() => {
+  const term = search.value.trim().toLowerCase()
+
+  let rows = players.value.filter((p) => {
+    if (activityFilter.value === 'active' && !p.games_played) return false
+    if (activityFilter.value === 'new' && p.games_played) return false
+
+    if (!term) return true
+    return p.name?.toLowerCase().includes(term)
+  })
+
+  rows = rows.slice().sort((a, b) => {
+    if (sortBy.value === 'name_asc') return String(a.name || '').localeCompare(String(b.name || ''))
+    if (sortBy.value === 'wins_desc') return (b.games_won || 0) - (a.games_won || 0)
+    if (sortBy.value === 'bid_desc') return bidRate(b) - bidRate(a)
+    return (b.total_score || 0) - (a.total_score || 0)
+  })
+
+  return rows
+})
 
 function openCreate() {
   editingPlayer.value = null
@@ -271,6 +349,16 @@ onMounted(fetchPlayers)
 
 .player-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.players-search {
+  flex: 1 1 320px;
+  min-width: 240px;
+}
+
+.players-select {
+  flex: 0 1 220px;
+  min-width: 180px;
 }
 
 .stats-grid {

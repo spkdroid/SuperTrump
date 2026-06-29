@@ -1,7 +1,16 @@
 import axios from 'axios'
 import { useAppStore } from '@/store'
+import { loadSession } from '@/utils/session'
 
 const api = axios.create({ baseURL: '/api' })
+
+api.interceptors.request.use(config => {
+  const session = loadSession()
+  if (session?.username) {
+    config.headers['x-supertrump-user'] = session.username
+  }
+  return config
+})
 
 api.interceptors.response.use(
   res => res,
@@ -14,6 +23,11 @@ api.interceptors.response.use(
     return Promise.reject(err)
   }
 )
+
+export const authAPI = {
+  login: (username) => api.post('/auth/login', { username }),
+  me:    () => api.get('/auth/me'),
+}
 
 export const playersAPI = {
   getAll:  ()        => api.get('/players'),

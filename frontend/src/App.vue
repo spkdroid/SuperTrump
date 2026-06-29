@@ -2,6 +2,7 @@
   <v-app class="st-app-root">
     <!-- ── Navigation Drawer ─────────────────────────── -->
     <v-navigation-drawer
+      v-if="!isLoginRoute"
       v-model="drawer"
       :rail="rail"
       :width="272"
@@ -60,21 +61,34 @@
     </v-navigation-drawer>
 
     <!-- ── App Bar ────────────────────────────────────── -->
-    <v-app-bar flat color="surface" class="app-bar-border st-topbar">
+    <v-app-bar v-if="!isLoginRoute" flat color="surface" class="app-bar-border st-topbar">
       <v-app-bar-nav-icon variant="text" @click="rail = !rail" />
       <v-app-bar-title>
         <span class="font-weight-bold text-on-surface">Super Trump</span>
         <span class="text-caption ml-2 text-medium-emphasis">Scoring System</span>
       </v-app-bar-title>
       <v-spacer />
+      <v-chip
+        v-if="store.currentUser"
+        color="surface-variant"
+        size="small"
+        label
+        class="mr-2"
+      >
+        <v-icon start size="14">mdi-account</v-icon>
+        {{ store.currentUser.username }}
+      </v-chip>
       <v-chip color="primary" size="small" label variant="tonal" class="mr-3">
         <v-icon start size="14">mdi-cards</v-icon>
         Live Scoring
       </v-chip>
+      <v-btn variant="text" color="primary" prepend-icon="mdi-logout" @click="doLogout">
+        Logout
+      </v-btn>
     </v-app-bar>
 
     <!-- ── Main Content ───────────────────────────────── -->
-    <v-main>
+    <v-main :class="{ 'auth-main': isLoginRoute }">
       <router-view v-slot="{ Component }">
         <v-fade-transition mode="out-in">
           <component :is="Component" />
@@ -117,13 +131,18 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/store'
 
 const store       = useAppStore()
+const route       = useRoute()
+const router      = useRouter()
 const drawer      = ref(true)
 const rail        = ref(false)
 const rulesDialog = ref(false)
+
+const isLoginRoute = computed(() => route.name === 'Login')
 
 const navItems = [
   { icon: 'mdi-view-dashboard-outline', title: 'Dashboard',   to: '/'            },
@@ -146,12 +165,21 @@ const rulesSections = [
     text:  'Bidding team wins if they collect ≥ bid points.\nBid < 40 (Normal): Win = bid/2 | Lose = −bid (each: bidder & partners total)\nBid 40+ (Honors): Win = bid | Lose = −2×bid\nInitial bid 56: Win = 112 | Lose = −224\nUpgraded to 56 mid-game: Win = 84 | Lose = −168',
   },
 ]
+
+function doLogout() {
+  store.logout()
+  router.push('/login')
+}
 </script>
 
 <style scoped>
 .soft-divider { opacity: 0.1; }
 .rules-scroll { max-height: 75vh; }
 .preline-text { white-space: pre-line; }
+
+.auth-main {
+  padding-top: 0 !important;
+}
 
 .st-app-root {
   color: var(--st-text);

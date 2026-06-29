@@ -2,8 +2,9 @@ const express  = require('express');
 const cors     = require('cors');
 const helmet   = require('helmet');
 const morgan   = require('morgan');
-const { waitForDB } = require('./db');
+const { waitForDB, runMigrations } = require('./db');
 
+const authRouter        = require('./routes/auth');
 const playersRouter     = require('./routes/players');
 const gamesRouter       = require('./routes/games');
 const roundsRouter      = require('./routes/rounds');
@@ -20,6 +21,7 @@ app.use(express.json());
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', ts: new Date() }));
 
+app.use('/api/auth',        authRouter);
 app.use('/api/players',     playersRouter);
 app.use('/api/games',       gamesRouter);
 app.use('/api/rounds',      roundsRouter);
@@ -34,6 +36,7 @@ app.use((err, _req, res, _next) => {
 
 (async () => {
   await waitForDB();
+  await runMigrations();
   app.listen(PORT, () => console.log(`🃏  Super Trump API running on port ${PORT}`));
 })();
 

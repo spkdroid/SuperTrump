@@ -22,6 +22,42 @@
         </div>
       </div>
 
+      <div class="d-flex align-center flex-wrap gap-3 mb-4">
+        <v-text-field
+          v-model="search"
+          variant="outlined"
+          density="compact"
+          color="primary"
+          hide-details
+          clearable
+          prepend-inner-icon="mdi-magnify"
+          label="Search games, owners, players"
+          class="games-search"
+        />
+        <v-select
+          v-model="ownership"
+          :items="ownershipOptions"
+          item-title="title"
+          item-value="value"
+          label="Visibility"
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="games-select"
+        />
+        <v-select
+          v-model="sortBy"
+          :items="sortOptions"
+          item-title="title"
+          item-value="value"
+          label="Sort"
+          variant="outlined"
+          density="compact"
+          hide-details
+          class="games-select"
+        />
+      </div>
+
       <div v-if="loading" class="text-center py-16">
         <v-progress-circular indeterminate color="primary" size="56" />
       </div>
@@ -63,10 +99,11 @@
               </div>
               <div class="text-caption text-medium-emphasis">
                 {{ game.num_players }} players · Round {{ game.current_round }} ·
-                {{ fmtDate(game.created_at) }}
+                {{ fmtDate(game.created_at) }} · Owner {{ game.owner_username || 'admin' }}
               </div>
             </div>
             <v-btn
+              v-if="canManage(game)"
               icon="mdi-delete-outline"
               size="x-small"
               variant="text"
@@ -130,6 +167,15 @@
               </v-avatar>
             </div>
             <v-spacer />
+            <v-chip
+              v-if="!canManage(game)"
+              size="x-small"
+              label
+              color="surface-variant"
+              class="mr-2"
+            >
+              View Only
+            </v-chip>
             <v-btn
               :color="game.status === 'active' ? 'primary' : 'grey'"
               size="small"
@@ -267,16 +313,54 @@ const saving       = ref(false)
 const games        = ref([])
 const allPlayers   = ref([])
 const filter       = ref('all')
+const search       = ref('')
+const sortBy       = ref('recent')
+const ownership    = ref('all')
 const createDialog = ref(false)
 const deleteDialog = ref(false)
 const deletingGame = ref(null)
 
 const newGame = ref({ name: '', playerIds: [] })
 
+const sortOptions = [
+  { title: 'Most Recent', value: 'recent' },
+  { title: 'Oldest First', value: 'oldest' },
+  { title: 'Name (A-Z)', value: 'name_asc' },
+  { title: 'Players (High-Low)', value: 'players_desc' },
+]
+
+const ownershipOptions = [
+  { title: 'All Games', value: 'all' },
+  { title: 'Managed by Me', value: 'mine' },
+  { title: 'View Only', value: 'shared' },
+]
+
 const filteredGames = computed(() => {
-  if (filter.value === 'active')    return games.value.filter(g => g.status === 'active')
-  if (filter.value === 'completed') return games.value.filter(g => g.status === 'completed')
-  return games.value
+  const term = search.value.trim().toLowerCase()
+
+  let rows = games.value.filter(g => {
+    if (filter.value === 'active' && g.status !== 'active') return false
+    if (filter.value === 'completed' && g.status !== 'completed') return false
+
+    if (ownership.value === 'mine' && !canManage(g)) return false
+    if (ownership.value === 'shared' && canManage(g)) return false
+
+    if (!term) return true
+    return (
+      g.name?.toLowerCase().includes(term) ||
+      g.owner_username?.toLowerCase().includes(term) ||
+      (g.players || []).some(p => p.name?.toLowerCase().includes(term))
+    )
+  })
+
+  rows = rows.slice().sort((a, b) => {
+    if (sortBy.value === 'oldest') return new Date(a.created_at) - new Date(b.created_at)
+    if (sortBy.value === 'name_asc') return String(a.name || '').localeCompare(String(b.name || ''))
+    if (sortBy.value === 'players_desc') return (b.num_players || 0) - (a.num_players || 0)
+    return new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at)
+  })
+
+  return rows
 })
 const activeCount    = computed(() => games.value.filter(g => g.status === 'active').length)
 const completedCount = computed(() => games.value.filter(g => g.status === 'completed').length)
@@ -284,6 +368,7 @@ const completedCount = computed(() => games.value.filter(g => g.status === 'comp
 function initials(n = '') { return n.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() }
 function fmtDate(d)       { return new Date(d).toLocaleDateString() }
 function topOf(players)   { return (players || []).slice().sort((a,b) => b.current_score - a.current_score).slice(0,3) }
+function canManage(game)  { return store.canManageGame(game) }
 
 function togglePlayer(id) {
   const idx = newGame.value.playerIds.indexOf(id)
@@ -337,6 +422,16 @@ onMounted(fetchGames)
 .games-filter-toggle {
   border: 1px solid var(--st-panel-border);
   background: rgba(255, 255, 255, 0.75);
+}
+
+.games-search {
+  flex: 1 1 320px;
+  min-width: 260px;
+}
+
+.games-select {
+  flex: 0 1 210px;
+  min-width: 180px;
 }
 
 .game-card {

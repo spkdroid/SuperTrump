@@ -22,7 +22,7 @@
             </div>
             <p class="st-page-subtitle">
               {{ game.num_players }} players · {{ rounds.length }} rounds played ·
-              Started {{ fmtDate(game.created_at) }}
+              Started {{ fmtDate(game.created_at) }} · Owner {{ game.owner_username || 'admin' }}
             </p>
           </div>
           <div class="d-flex gap-2 align-center flex-wrap">
@@ -37,7 +37,7 @@
               Live Scores
             </v-btn>
             <v-btn
-              v-if="game.status === 'active'"
+              v-if="game.status === 'active' && canManageGame"
               color="primary"
               prepend-icon="mdi-plus"
               rounded="lg"
@@ -46,7 +46,7 @@
               Add Round
             </v-btn>
             <v-btn
-              v-if="game.status === 'active'"
+              v-if="game.status === 'active' && canManageGame"
               color="warning"
               prepend-icon="mdi-flag-triangle"
               rounded="lg"
@@ -55,7 +55,7 @@
               Last Round
             </v-btn>
             <v-btn
-              v-if="game.status === 'active'"
+              v-if="game.status === 'active' && canManageGame"
               color="secondary"
               variant="outlined"
               prepend-icon="mdi-flag-checkered"
@@ -66,6 +66,17 @@
             </v-btn>
           </div>
         </div>
+
+        <v-alert
+          v-if="game.status === 'active' && !canManageGame"
+          type="info"
+          variant="tonal"
+          density="comfortable"
+          class="mb-4"
+          border="start"
+        >
+          You can view this game, but only the owner or admin can add rounds, undo rounds, or end it.
+        </v-alert>
 
       <!-- ── Leaderboard + Chart ──────────────────────────── -->
       <v-row class="mb-4">
@@ -156,7 +167,7 @@
       </v-row>
 
         <!-- ── Round History ───────────────────────────────── -->
-        <RoundHistory :rounds="rounds" @delete="onRoundDeleted" />
+        <RoundHistory :rounds="rounds" :can-manage="canManageGame" @delete="onRoundDeleted" />
       </template>
     </div>
 
@@ -351,6 +362,11 @@ const confettiStyles = Array.from({ length: 65 }, (_, i) => ({
 const chartData = computed(() => {
   if (!game.value || !rounds.value.length) return { series: [], colors: [], categories: [] }
   return buildChartSeries(game.value.players || [], rounds.value)
+})
+
+const canManageGame = computed(() => {
+  if (!game.value) return false
+  return store.canManageGame(game.value)
 })
 
 const chartOptions = computed(() => ({
