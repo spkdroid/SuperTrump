@@ -1,49 +1,52 @@
 <template>
   <v-container fluid class="pa-6">
-    <!-- Header -->
-    <div class="d-flex align-center mb-6">
-      <div>
-        <h1 class="text-h4 font-weight-bold text-primary">Games</h1>
-        <p class="text-medium-emphasis text-body-2 mt-1">
-          {{ activeCount }} active · {{ completedCount }} completed
-        </p>
+    <div class="st-page-shell">
+      <!-- Header -->
+      <div class="st-header-row flex-wrap gap-3">
+        <div>
+          <h1 class="st-page-title">Games</h1>
+          <p class="st-page-subtitle">
+            {{ activeCount }} active · {{ completedCount }} completed
+          </p>
+        </div>
+        <v-spacer />
+        <div class="d-flex align-center gap-2 flex-wrap">
+          <v-btn-toggle v-model="filter" density="compact" rounded="lg" color="primary" class="games-filter-toggle">
+            <v-btn value="all" size="small">All</v-btn>
+            <v-btn value="active" size="small">Active</v-btn>
+            <v-btn value="completed" size="small">Completed</v-btn>
+          </v-btn-toggle>
+          <v-btn color="primary" prepend-icon="mdi-plus" rounded="lg" @click="createDialog = true">
+            New Game
+          </v-btn>
+        </div>
       </div>
-      <v-spacer />
-      <v-btn-toggle v-model="filter" density="compact" rounded="lg" color="primary" class="mr-3">
-        <v-btn value="all" size="small">All</v-btn>
-        <v-btn value="active" size="small">Active</v-btn>
-        <v-btn value="completed" size="small">Completed</v-btn>
-      </v-btn-toggle>
-      <v-btn color="primary" prepend-icon="mdi-plus" rounded="lg" @click="createDialog = true">
-        New Game
-      </v-btn>
-    </div>
 
-    <div v-if="loading" class="text-center py-16">
-      <v-progress-circular indeterminate color="primary" size="56" />
-    </div>
+      <div v-if="loading" class="text-center py-16">
+        <v-progress-circular indeterminate color="primary" size="56" />
+      </div>
 
-    <div v-else-if="!filteredGames.length" class="text-center py-16 text-medium-emphasis">
-      <v-icon size="72" class="mb-4 opacity-30">mdi-cards-outline</v-icon>
-      <div class="text-h6">No games found</div>
-      <v-btn class="mt-4" color="primary" rounded="lg" @click="createDialog = true">
-        Create First Game
-      </v-btn>
-    </div>
+      <div v-else-if="!filteredGames.length" class="text-center py-16 text-medium-emphasis">
+        <v-icon size="72" class="mb-4 opacity-30">mdi-cards-outline</v-icon>
+        <div class="text-h6">No games found</div>
+        <v-btn class="mt-4" color="primary" rounded="lg" @click="createDialog = true">
+          Create First Game
+        </v-btn>
+      </div>
 
-    <v-row v-else>
-      <v-col
-        v-for="game in filteredGames"
-        :key="game.id"
-        cols="12" sm="6" lg="4"
-      >
-        <v-card
-          color="surface"
-          rounded="xl"
-          elevation="0"
-          class="game-card st-panel st-clickable"
-          @click="$router.push(`/games/${game.id}`)"
+      <v-row v-else>
+        <v-col
+          v-for="game in filteredGames"
+          :key="game.id"
+          cols="12" sm="6" lg="4"
         >
+          <v-card
+            color="surface"
+            rounded="xl"
+            elevation="0"
+            class="game-card st-panel st-lift st-clickable"
+            @click="$router.push(`/games/${game.id}`)"
+          >
           <!-- Card Header -->
           <div class="pa-5 pb-3 d-flex align-start">
             <div class="flex-grow-1">
@@ -138,13 +141,13 @@
               {{ game.status === 'active' ? 'Play' : 'View' }}
             </v-btn>
           </div>
-        </v-card>
-      </v-col>
-    </v-row>
+          </v-card>
+        </v-col>
+      </v-row>
 
-    <!-- ── Create Game Dialog ─────────────────────────────── -->
-    <v-dialog v-model="createDialog" max-width="520" persistent>
-      <v-card color="surface" rounded="xl">
+      <!-- ── Create Game Dialog ─────────────────────────────── -->
+      <v-dialog v-model="createDialog" max-width="520" persistent>
+        <v-card color="surface" rounded="xl" class="st-panel">
         <v-card-title class="pa-5 pb-3 d-flex align-center">
           <v-icon color="primary" class="mr-2">mdi-cards-outline</v-icon>
           Create New Game
@@ -225,12 +228,12 @@
             Start Game
           </v-btn>
         </v-card-actions>
-      </v-card>
-    </v-dialog>
+        </v-card>
+      </v-dialog>
 
-    <!-- Delete Confirm -->
-    <v-dialog v-model="deleteDialog" max-width="380">
-      <v-card color="surface" rounded="xl">
+      <!-- Delete Confirm -->
+      <v-dialog v-model="deleteDialog" max-width="380">
+        <v-card color="surface" rounded="xl" class="st-panel">
         <v-card-title class="pa-5 pb-3">
           <v-icon color="error" class="mr-2">mdi-delete-outline</v-icon>
           Delete Game?
@@ -244,8 +247,9 @@
           <v-btn variant="text" @click="deleteDialog = false">Cancel</v-btn>
           <v-btn color="error" rounded="lg" :loading="saving" @click="deleteGame">Delete</v-btn>
         </v-card-actions>
-      </v-card>
-    </v-dialog>
+        </v-card>
+      </v-dialog>
+    </div>
   </v-container>
 </template>
 
@@ -330,7 +334,16 @@ onMounted(fetchGames)
 </script>
 
 <style scoped>
-.game-card { transition: transform 0.2s, box-shadow 0.2s; }
+.games-filter-toggle {
+  border: 1px solid var(--st-panel-border);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.game-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
 .game-card:hover {
   transform: translateY(-3px);
   box-shadow: var(--st-hover-shadow);

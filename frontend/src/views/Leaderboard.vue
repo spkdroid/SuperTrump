@@ -1,92 +1,92 @@
 <template>
   <v-container fluid class="pa-6">
-    <!-- Header -->
-    <div class="d-flex align-center mb-6">
-      <div>
-        <h1 class="text-h4 font-weight-bold text-primary">Leaderboard</h1>
-        <p class="text-medium-emphasis text-body-2 mt-1">All-time player rankings</p>
-      </div>
-    </div>
-
-    <div v-if="loading" class="text-center py-16">
-      <v-progress-circular indeterminate color="primary" size="56" />
-    </div>
-
-    <template v-else>
-      <!-- Champion Banner -->
-      <v-card
-        v-if="players.length"
-        color="surface-variant"
-        rounded="xl"
-        elevation="0"
-        class="mb-6 pa-6 champion-banner"
-        style="border: 1px solid rgba(252,211,77,0.3);"
-      >
-        <div class="d-flex align-center gap-5 flex-wrap">
-          <v-avatar :color="players[0].avatar_color" size="80" rounded="xl">
-            <span class="text-h5 font-weight-black" style="color: rgba(0,0,0,0.7);">
-              {{ initials(players[0].name) }}
-            </span>
-          </v-avatar>
-          <div class="flex-grow-1">
-            <div class="d-flex align-center gap-2 mb-1">
-              <v-icon color="secondary" size="28">mdi-crown</v-icon>
-              <span class="text-h5 font-weight-black text-secondary">{{ players[0].name }}</span>
-              <v-chip color="secondary" size="small" label>Champion</v-chip>
-            </div>
-            <div class="text-medium-emphasis text-body-2">
-              {{ players[0].games_played }} games · {{ players[0].win_rate }}% win rate ·
-              {{ players[0].rounds_as_bidder }} bids ({{ players[0].bidder_success_rate }}% success)
-            </div>
-          </div>
-          <div class="text-right">
-            <div class="text-h3 font-weight-black text-secondary">
-              {{ players[0].total_score >= 0 ? '+' : '' }}{{ players[0].total_score }}
-            </div>
-            <div class="text-caption text-medium-emphasis">Total Score</div>
-          </div>
+    <div class="st-page-shell">
+      <!-- Header -->
+      <div class="st-header-row">
+        <div>
+          <h1 class="st-page-title">Leaderboard</h1>
+          <p class="st-page-subtitle">All-time player rankings and performance trends</p>
         </div>
-      </v-card>
+      </div>
 
-      <!-- Stats Row -->
-      <v-row class="mb-4">
-        <v-col v-for="s in statCards" :key="s.label" cols="6" md="3">
-          <v-card color="surface" rounded="xl" elevation="0"
-            class="pa-4 text-center"
-            style="border: 1px solid rgba(74,222,128,0.12);">
-            <div class="text-h5 font-weight-black" :class="s.textClass">{{ s.value }}</div>
-            <div class="text-caption text-medium-emphasis mt-1">{{ s.label }}</div>
-          </v-card>
-        </v-col>
-      </v-row>
+      <div v-if="loading" class="text-center py-16">
+        <v-progress-circular indeterminate color="primary" size="56" />
+      </div>
 
-      <!-- Score Chart -->
-      <v-card color="surface" rounded="xl" elevation="0" class="mb-4"
-        style="border: 1px solid rgba(74,222,128,0.12);">
-        <v-card-title class="pa-5 pb-3 d-flex align-center">
-          <v-icon color="info" class="mr-2">mdi-chart-bar</v-icon>
-          Overall Score Comparison
-        </v-card-title>
-        <v-card-text>
-          <apexchart
-            v-if="players.length"
-            type="bar"
-            height="260"
-            :options="barOptions"
-            :series="barSeries"
-          />
-        </v-card-text>
-      </v-card>
+      <template v-else>
+        <!-- Champion Banner -->
+        <v-card
+          v-if="players.length"
+          color="surface-variant"
+          rounded="xl"
+          elevation="0"
+          class="mb-6 pa-6 champion-banner st-panel st-panel-strong"
+        >
+          <div class="d-flex align-center gap-5 flex-wrap">
+            <v-avatar :color="players[0].avatar_color" size="80" rounded="xl">
+              <span class="st-avatar-initial-lg text-h5 font-weight-black">
+                {{ initials(players[0].name) }}
+              </span>
+            </v-avatar>
+            <div class="flex-grow-1">
+              <div class="d-flex align-center gap-2 mb-1 flex-wrap">
+                <v-icon color="secondary" size="28">mdi-crown</v-icon>
+                <span class="text-h5 font-weight-black text-secondary">{{ players[0].name }}</span>
+                <v-chip color="secondary" size="small" label>Champion</v-chip>
+              </div>
+              <div class="text-medium-emphasis text-body-2">
+                {{ players[0].games_played }} games · {{ players[0].win_rate }}% win rate ·
+                {{ players[0].rounds_as_bidder }} bids ({{ players[0].bidder_success_rate }}% success)
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-h3 font-weight-black text-secondary">
+                {{ players[0].total_score >= 0 ? '+' : '' }}{{ players[0].total_score }}
+              </div>
+              <div class="text-caption text-medium-emphasis">Total Score</div>
+            </div>
+          </div>
+        </v-card>
 
-      <!-- Rankings Table -->
-      <v-card color="surface" rounded="xl" elevation="0"
-        style="border: 1px solid rgba(74,222,128,0.12);">
-        <v-card-title class="pa-5 pb-3 d-flex align-center">
-          <v-icon color="primary" class="mr-2">mdi-format-list-numbered</v-icon>
-          Full Rankings
-        </v-card-title>
-        <v-card-text class="pa-0">
-          <v-table density="comfortable" class="leaderboard-table">
+        <!-- Stats Row -->
+        <v-row class="mb-4">
+          <v-col v-for="s in statCards" :key="s.label" cols="6" md="3">
+            <v-card color="surface" rounded="xl" elevation="0" class="pa-4 text-center st-panel st-lift">
+              <div class="text-h5 font-weight-black" :class="s.textClass">{{ s.value }}</div>
+              <div class="text-caption text-medium-emphasis mt-1">{{ s.label }}</div>
+            </v-card>
+          </v-col>
+        </v-row>
+
+        <!-- Score Chart -->
+        <v-card color="surface" rounded="xl" elevation="0" class="mb-4 st-panel">
+          <v-card-title class="pa-5 pb-3 d-flex align-center">
+            <v-icon color="info" class="mr-2">mdi-chart-bar</v-icon>
+            Overall Score Comparison
+          </v-card-title>
+          <v-card-text>
+            <apexchart
+              v-if="players.length"
+              type="bar"
+              height="260"
+              :options="barOptions"
+              :series="barSeries"
+            />
+            <div v-else class="text-center py-8 text-medium-emphasis">
+              <v-icon size="42" class="mb-2 opacity-30">mdi-chart-bar</v-icon>
+              <div>Score comparison appears after the first game.</div>
+            </div>
+          </v-card-text>
+        </v-card>
+
+        <!-- Rankings Table -->
+        <v-card color="surface" rounded="xl" elevation="0" class="st-panel">
+          <v-card-title class="pa-5 pb-3 d-flex align-center">
+            <v-icon color="primary" class="mr-2">mdi-format-list-numbered</v-icon>
+            Full Rankings
+          </v-card-title>
+          <v-card-text class="pa-0">
+            <v-table density="comfortable" class="leaderboard-table">
             <thead>
               <tr>
                 <th class="text-left pl-6">#</th>
@@ -117,7 +117,7 @@
                 <td>
                   <div class="d-flex align-center gap-2 py-2">
                     <v-avatar :color="player.avatar_color" size="32" rounded="lg">
-                      <span class="font-weight-bold" style="font-size: 10px; color: rgba(0,0,0,0.7);">
+                      <span class="st-avatar-initial-sm">
                         {{ initials(player.name) }}
                       </span>
                     </v-avatar>
@@ -143,13 +143,14 @@
               </tr>
             </tbody>
           </v-table>
-          <div v-if="!players.length" class="text-center pa-12 text-medium-emphasis">
-            <v-icon size="64" class="mb-4 opacity-30">mdi-trophy-outline</v-icon>
-            <div>No ranking data yet. Play some games!</div>
-          </div>
-        </v-card-text>
-      </v-card>
-    </template>
+            <div v-if="!players.length" class="text-center pa-12 text-medium-emphasis">
+              <v-icon size="64" class="mb-4 opacity-30">mdi-trophy-outline</v-icon>
+              <div>No ranking data yet. Play some games!</div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </template>
+    </div>
   </v-container>
 </template>
 
@@ -177,11 +178,11 @@ const barSeries  = computed(() => [{
 
 const barOptions = computed(() => ({
   chart:  { background: 'transparent', toolbar: { show: false } },
-  theme:  { mode: 'dark' },
+  theme:  { mode: 'light' },
   colors: players.value.map(p => p.avatar_color),
-  xaxis:  { categories: players.value.map(p => p.name), labels: { style: { colors: '#9CA3AF' } } },
-  yaxis:  { labels: { style: { colors: '#9CA3AF' }, formatter: v => (v >= 0 ? `+${v}` : `${v}`) } },
-  grid:   { borderColor: '#1B3320' },
+  xaxis:  { categories: players.value.map(p => p.name), labels: { style: { colors: '#64748B' } } },
+  yaxis:  { labels: { style: { colors: '#64748B' }, formatter: v => (v >= 0 ? `+${v}` : `${v}`) } },
+  grid:   { borderColor: '#DCE6F2' },
   plotOptions: {
     bar: {
       distributed: true,
@@ -190,7 +191,7 @@ const barOptions = computed(() => ({
     },
   },
   legend:  { show: false },
-  tooltip: { theme: 'dark' },
+  tooltip: { theme: 'light' },
 }))
 
 onMounted(async () => {
@@ -208,14 +209,22 @@ onMounted(async () => {
 
 <style scoped>
 .champion-banner {
-  background: linear-gradient(135deg, rgba(74,222,128,0.07) 0%, rgba(252,211,77,0.04) 100%) !important;
+  background: linear-gradient(135deg, rgba(var(--st-primary-rgb), 0.08) 0%, rgba(var(--st-secondary-rgb), 0.08) 100%) !important;
 }
+
 .leaderboard-table thead tr th {
-  background: rgba(74,222,128,0.04) !important;
-  color: #9CA3AF !important;
+  background: rgba(var(--st-primary-rgb), 0.06) !important;
+  color: #64748B !important;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-.top-row { background: rgba(252,211,77,0.04) !important; }
+
+.leaderboard-table tbody tr:hover {
+  background: rgba(var(--st-primary-rgb), 0.04);
+}
+
+.top-row {
+  background: rgba(var(--st-primary-rgb), 0.08) !important;
+}
 </style>

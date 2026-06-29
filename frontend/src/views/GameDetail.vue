@@ -1,70 +1,71 @@
 <template>
   <v-container fluid class="pa-6">
-    <div v-if="loading" class="text-center py-16">
-      <v-progress-circular indeterminate color="primary" size="56" />
-    </div>
-
-    <template v-else-if="game">
-      <!-- ── Header ───────────────────────────────────────── -->
-      <div class="d-flex align-start mb-6 gap-3 flex-wrap">
-        <v-btn icon="mdi-arrow-left" variant="text" @click="$router.push('/games')" />
-        <div class="flex-grow-1">
-          <div class="d-flex align-center gap-2 flex-wrap">
-            <h1 class="text-h4 font-weight-bold text-primary">{{ game.name }}</h1>
-            <v-chip
-              :color="game.status === 'active' ? 'success' : 'grey'"
-              label
-              size="small"
-            >
-              {{ game.status === 'active' ? 'LIVE' : 'COMPLETED' }}
-            </v-chip>
-          </div>
-          <p class="text-medium-emphasis text-body-2 mt-1">
-            {{ game.num_players }} players · {{ rounds.length }} rounds played ·
-            Started {{ fmtDate(game.created_at) }}
-          </p>
-        </div>
-        <div class="d-flex gap-2 align-center flex-wrap">
-          <v-btn
-            v-if="game.status === 'active'"
-            color="info"
-            variant="tonal"
-            prepend-icon="mdi-scoreboard"
-            rounded="lg"
-            :to="`/games/${gameId}/live`"
-          >
-            Live Scores
-          </v-btn>
-          <v-btn
-            v-if="game.status === 'active'"
-            color="primary"
-            prepend-icon="mdi-plus"
-            rounded="lg"
-            @click="lastRoundMode = false; roundDialog = true"
-          >
-            Add Round
-          </v-btn>
-          <v-btn
-            v-if="game.status === 'active'"
-            color="warning"
-            prepend-icon="mdi-flag-triangle"
-            rounded="lg"
-            @click="lastRoundMode = true; roundDialog = true"
-          >
-            Last Round
-          </v-btn>
-          <v-btn
-            v-if="game.status === 'active'"
-            color="secondary"
-            variant="outlined"
-            prepend-icon="mdi-flag-checkered"
-            rounded="lg"
-            @click="completeDialog = true"
-          >
-            End Game
-          </v-btn>
-        </div>
+    <div class="st-page-shell">
+      <div v-if="loading" class="text-center py-16">
+        <v-progress-circular indeterminate color="primary" size="56" />
       </div>
+
+      <template v-else-if="game">
+        <!-- ── Header ───────────────────────────────────────── -->
+        <div class="st-header-row align-start gap-3 flex-wrap">
+          <v-btn icon="mdi-arrow-left" variant="text" @click="$router.push('/games')" />
+          <div class="flex-grow-1">
+            <div class="d-flex align-center gap-2 flex-wrap">
+              <h1 class="st-page-title">{{ game.name }}</h1>
+              <v-chip
+                :color="game.status === 'active' ? 'success' : 'grey'"
+                label
+                size="small"
+              >
+                {{ game.status === 'active' ? 'LIVE' : 'COMPLETED' }}
+              </v-chip>
+            </div>
+            <p class="st-page-subtitle">
+              {{ game.num_players }} players · {{ rounds.length }} rounds played ·
+              Started {{ fmtDate(game.created_at) }}
+            </p>
+          </div>
+          <div class="d-flex gap-2 align-center flex-wrap">
+            <v-btn
+              v-if="game.status === 'active'"
+              color="info"
+              variant="tonal"
+              prepend-icon="mdi-scoreboard"
+              rounded="lg"
+              :to="`/games/${gameId}/live`"
+            >
+              Live Scores
+            </v-btn>
+            <v-btn
+              v-if="game.status === 'active'"
+              color="primary"
+              prepend-icon="mdi-plus"
+              rounded="lg"
+              @click="lastRoundMode = false; roundDialog = true"
+            >
+              Add Round
+            </v-btn>
+            <v-btn
+              v-if="game.status === 'active'"
+              color="warning"
+              prepend-icon="mdi-flag-triangle"
+              rounded="lg"
+              @click="lastRoundMode = true; roundDialog = true"
+            >
+              Last Round
+            </v-btn>
+            <v-btn
+              v-if="game.status === 'active'"
+              color="secondary"
+              variant="outlined"
+              prepend-icon="mdi-flag-checkered"
+              rounded="lg"
+              @click="completeDialog = true"
+            >
+              End Game
+            </v-btn>
+          </div>
+        </div>
 
       <!-- ── Leaderboard + Chart ──────────────────────────── -->
       <v-row class="mb-4">
@@ -154,9 +155,10 @@
         </v-col>
       </v-row>
 
-      <!-- ── Round History ───────────────────────────────── -->
-      <RoundHistory :rounds="rounds" @delete="onRoundDeleted" />
-    </template>
+        <!-- ── Round History ───────────────────────────────── -->
+        <RoundHistory :rounds="rounds" @delete="onRoundDeleted" />
+      </template>
+    </div>
 
     <!-- ── Add Round Dialog ─────────────────────────────── -->
     <RoundEntry

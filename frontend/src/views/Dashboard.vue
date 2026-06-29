@@ -1,43 +1,44 @@
 <template>
   <v-container fluid class="pa-6">
-    <!-- ── Header ──────────────────────────────────────────── -->
-    <div class="d-flex align-center mb-6">
-      <div>
-        <h1 class="text-h4 font-weight-bold text-primary">Dashboard</h1>
-        <p class="text-medium-emphasis text-body-2 mt-1">Super Trump Scoring Overview</p>
+    <div class="st-page-shell">
+      <!-- ── Header ──────────────────────────────────────────── -->
+      <div class="st-header-row">
+        <div>
+          <h1 class="st-page-title">Dashboard</h1>
+          <p class="st-page-subtitle">Super Trump Scoring Overview</p>
+        </div>
+        <v-spacer />
+        <v-btn color="primary" prepend-icon="mdi-cards-outline" to="/games" rounded="lg">
+          New Game
+        </v-btn>
       </div>
-      <v-spacer />
-      <v-btn color="primary" prepend-icon="mdi-cards-outline" to="/games" rounded="lg">
-        New Game
-      </v-btn>
-    </div>
 
-    <!-- ── Stat Cards ──────────────────────────────────────── -->
-    <v-row class="mb-4">
-      <v-col v-for="stat in statCards" :key="stat.label" cols="12" sm="6" md="3">
-        <v-card
-          color="surface"
-          rounded="xl"
-          elevation="0"
-          class="stat-card pa-5"
-          :class="`stat-accent-${stat.accent}`"
-        >
-          <div class="d-flex align-center justify-space-between mb-4">
-            <div class="stat-icon-wrap" :class="`si-${stat.accent}`">
-              <v-icon :color="stat.accent" size="20">{{ stat.icon }}</v-icon>
+      <!-- ── Stat Cards ──────────────────────────────────────── -->
+      <v-row class="mb-4">
+        <v-col v-for="stat in statCards" :key="stat.label" cols="12" sm="6" md="3">
+          <v-card
+            color="surface"
+            rounded="xl"
+            elevation="0"
+            class="stat-card st-lift pa-5"
+            :class="`stat-accent-${stat.accent}`"
+          >
+            <div class="d-flex align-center justify-space-between mb-4">
+              <div class="stat-icon-wrap" :class="`si-${stat.accent}`">
+                <v-icon :color="stat.accent" size="20">{{ stat.icon }}</v-icon>
+              </div>
+              <v-chip :color="stat.accent" size="x-small" label variant="tonal">{{ stat.badge }}</v-chip>
             </div>
-            <v-chip :color="stat.accent" size="x-small" label variant="tonal">{{ stat.badge }}</v-chip>
-          </div>
-          <div class="text-h3 font-weight-black">
-            {{ loading ? '…' : stat.value }}
-          </div>
-          <div class="text-caption text-medium-emphasis mt-1">{{ stat.label }}</div>
-        </v-card>
-      </v-col>
-    </v-row>
+            <div class="text-h3 font-weight-black">
+              {{ loading ? '…' : stat.value }}
+            </div>
+            <div class="text-caption text-medium-emphasis mt-1">{{ stat.label }}</div>
+          </v-card>
+        </v-col>
+      </v-row>
 
-    <!-- ── Active Games + Top Players ─────────────────────── -->
-    <v-row>
+      <!-- ── Active Games + Top Players ─────────────────────── -->
+      <v-row>
       <!-- Active Games -->
       <v-col cols="12" md="8">
         <v-card color="surface" rounded="xl" elevation="0" class="st-panel">
@@ -162,37 +163,38 @@
           </v-card-text>
         </v-card>
       </v-col>
-    </v-row>
+      </v-row>
 
-    <!-- ── Scoring Quick Reference ─────────────────────────── -->
-    <v-row class="mt-2">
-      <v-col cols="12">
-        <v-card color="surface" rounded="xl" elevation="0" class="st-panel">
-          <v-card-title class="pa-5 pb-3">
-            <v-icon color="info" class="mr-2">mdi-calculator-variant</v-icon>
-            Scoring Quick Reference
-          </v-card-title>
-          <v-card-text>
-            <v-row>
-              <v-col
-                v-for="ref in scoringRef"
-                :key="ref.type"
-                cols="12" sm="6" md="3"
-              >
-                <v-card color="surface-variant" rounded="lg" elevation="0" class="pa-4 ref-card" :class="`ref-${ref.accent}`">
-                  <div class="text-caption text-medium-emphasis mb-1">{{ ref.type }}</div>
-                  <div class="text-subtitle-2 font-weight-bold mb-2">{{ ref.rule }}</div>
-                  <div class="d-flex gap-2 flex-wrap">
-                    <v-chip color="success" size="x-small">Win: {{ ref.win }}</v-chip>
-                    <v-chip color="error" size="x-small">Lose: {{ ref.lose }}</v-chip>
-                  </div>
-                </v-card>
-              </v-col>
-            </v-row>
-          </v-card-text>
-        </v-card>
-      </v-col>
-    </v-row>
+      <!-- ── Scoring Quick Reference ─────────────────────────── -->
+      <v-row class="mt-2">
+        <v-col cols="12">
+          <v-card color="surface" rounded="xl" elevation="0" class="st-panel">
+            <v-card-title class="pa-5 pb-3">
+              <v-icon color="info" class="mr-2">mdi-calculator-variant</v-icon>
+              Scoring Quick Reference
+            </v-card-title>
+            <v-card-text>
+              <v-row>
+                <v-col
+                  v-for="ref in scoringRef"
+                  :key="ref.type"
+                  cols="12" sm="6" md="3"
+                >
+                  <v-card color="surface-variant" rounded="lg" elevation="0" class="pa-4 ref-card" :class="`ref-${ref.accent}`">
+                    <div class="text-caption text-medium-emphasis mb-1">{{ ref.type }}</div>
+                    <div class="text-subtitle-2 font-weight-bold mb-2">{{ ref.rule }}</div>
+                    <div class="d-flex gap-2 flex-wrap">
+                      <v-chip color="success" size="x-small">Win: {{ ref.win }}</v-chip>
+                      <v-chip color="error" size="x-small">Lose: {{ ref.lose }}</v-chip>
+                    </div>
+                  </v-card>
+                </v-col>
+              </v-row>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </div>
   </v-container>
 </template>
 
@@ -267,9 +269,9 @@ onMounted(async () => {
   position: absolute; top: 0; left: 0; right: 0; height: 2px;
 }
 .stat-accent-primary::after   { background: linear-gradient(90deg, transparent, rgb(var(--st-primary-rgb)), transparent); }
-.stat-accent-info::after      { background: linear-gradient(90deg, transparent, #0EA5E9, transparent); }
-.stat-accent-warning::after   { background: linear-gradient(90deg, transparent, #D97706, transparent); }
-.stat-accent-secondary::after { background: linear-gradient(90deg, transparent, #3B82F6, transparent); }
+.stat-accent-info::after      { background: linear-gradient(90deg, transparent, rgb(var(--st-primary-dark-rgb)), transparent); }
+.stat-accent-warning::after   { background: linear-gradient(90deg, transparent, #F0A202, transparent); }
+.stat-accent-secondary::after { background: linear-gradient(90deg, transparent, rgb(var(--st-secondary-rgb)), transparent); }
 
 .stat-icon-wrap {
   width: 42px; height: 42px;
@@ -278,9 +280,9 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 .si-primary   { background: rgba(var(--st-primary-rgb), 0.12); }
-.si-info      { background: rgba(14,165,233,0.12); }
-.si-warning   { background: rgba(217,119,6,0.14); }
-.si-secondary { background: rgba(59,130,246,0.12); }
+.si-info      { background: rgba(var(--st-primary-dark-rgb), 0.14); }
+.si-warning   { background: rgba(240,162,2,0.16); }
+.si-secondary { background: rgba(var(--st-secondary-rgb), 0.14); }
 
 /* ── Scoring ref cards ─────────────────────────── */
 .ref-card {
@@ -289,7 +291,7 @@ onMounted(async () => {
 }
 .ref-card:hover { transform: translateY(-2px); }
 .ref-primary { border-left-color: rgb(var(--st-primary-rgb)) !important; }
-.ref-info    { border-left-color: #0EA5E9 !important; }
-.ref-error   { border-left-color: #DC2626 !important; }
-.ref-warning { border-left-color: #D97706 !important; }
+.ref-info    { border-left-color: rgb(var(--st-primary-dark-rgb)) !important; }
+.ref-error   { border-left-color: #D93025 !important; }
+.ref-warning { border-left-color: #F0A202 !important; }
 </style>

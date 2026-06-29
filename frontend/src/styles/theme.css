@@ -1,32 +1,61 @@
+@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap');
+
+/*
+  Super Trump Design Standard
+  - Palette: clean social-dashboard blue on neutral whites
+  - Layout: consistent page shell width and spacing rhythm
+  - Surfaces: subtle borders + layered shadows
+  - Typography: clear hierarchy with compact, readable body text
+*/
 :root {
-  --st-primary-rgb: 29, 78, 216;
-  --st-secondary-rgb: 14, 165, 233;
-  --st-panel-border: rgba(var(--st-primary-rgb), 0.16);
-  --st-panel-border-strong: rgba(var(--st-primary-rgb), 0.26);
-  --st-soft-fill: rgba(var(--st-primary-rgb), 0.05);
-  --st-soft-fill-strong: rgba(var(--st-primary-rgb), 0.1);
-  --st-avatar-initial: rgba(15, 23, 42, 0.78);
-  --st-hover-shadow: 0 14px 28px rgba(37, 99, 235, 0.18);
+  --st-primary-rgb: 24, 119, 242;
+  --st-primary-dark-rgb: 22, 111, 229;
+  --st-secondary-rgb: 66, 183, 42;
+
+  --st-surface: #ffffff;
+  --st-bg: #f0f2f5;
+  --st-bg-soft: #f7f8fa;
+  --st-text: #1c1e21;
+  --st-text-muted: #65676b;
+
+  --st-panel-border: #dfe3e8;
+  --st-panel-border-strong: #d2d8df;
+  --st-soft-fill: rgba(var(--st-primary-rgb), 0.06);
+  --st-soft-fill-strong: rgba(var(--st-primary-rgb), 0.12);
+  --st-avatar-initial: rgba(28, 30, 33, 0.78);
+
+  --st-radius-card: 14px;
+  --st-radius-control: 10px;
+  --st-shadow-panel: 0 1px 2px rgba(16, 24, 40, 0.08), 0 6px 14px rgba(16, 24, 40, 0.06);
+  --st-hover-shadow: 0 12px 22px rgba(16, 24, 40, 0.12);
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
 }
 
 body {
+  font-family: 'Public Sans', 'Segoe UI Variable Text', 'Segoe UI', sans-serif;
+  color: var(--st-text);
   background:
-    radial-gradient(circle at 12% 10%, rgba(var(--st-primary-rgb), 0.12) 0%, transparent 34%),
-    radial-gradient(circle at 88% 6%, rgba(var(--st-secondary-rgb), 0.1) 0%, transparent 30%),
-    #f4f8ff !important;
+    radial-gradient(circle at 14% 0%, rgba(var(--st-primary-rgb), 0.08) 0%, transparent 36%),
+    radial-gradient(circle at 88% 4%, rgba(var(--st-primary-rgb), 0.06) 0%, transparent 28%),
+    var(--st-bg) !important;
+  line-height: 1.45;
 }
 
 .v-application {
   background: transparent !important;
 }
 
-/* Smooth scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 9px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #dbe9ff;
+  background: #e9edf1;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -38,8 +67,35 @@ body {
   background: rgba(var(--st-primary-rgb), 0.5);
 }
 
+.st-page-shell {
+  width: min(1260px, 100%);
+  margin: 0 auto;
+}
+
+.st-header-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.st-page-title {
+  margin: 0;
+  font-size: clamp(1.45rem, 1.25rem + 0.7vw, 1.95rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: rgb(var(--v-theme-primary));
+}
+
+.st-page-subtitle {
+  margin-top: 4px;
+  font-size: 0.93rem;
+  color: var(--st-text-muted);
+}
+
 .st-panel {
   border: 1px solid var(--st-panel-border) !important;
+  border-radius: var(--st-radius-card) !important;
+  box-shadow: var(--st-shadow-panel) !important;
 }
 
 .st-panel-strong {
@@ -59,11 +115,20 @@ body {
 }
 
 .st-soft-border {
-  border: 1px solid rgba(var(--st-primary-rgb), 0.18);
+  border: 1px solid var(--st-panel-border-strong);
 }
 
 .st-clickable {
   cursor: pointer;
+}
+
+.st-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.st-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--st-hover-shadow) !important;
 }
 
 .st-stack-avatar {
@@ -78,18 +143,7 @@ body {
   color: var(--st-avatar-initial);
 }
 
-.st-avatar-initial-xs {
-  font-size: 8px;
-}
-
-.st-avatar-initial-sm {
-  font-size: 9px;
-}
-
-.st-avatar-initial-md {
-  font-size: 11px;
-}
-
-.st-avatar-initial-lg {
-  font-size: 12px;
-}
+.st-avatar-initial-xs { font-size: 8px; }
+.st-avatar-initial-sm { font-size: 9px; }
+.st-avatar-initial-md { font-size: 11px; }
+.st-avatar-initial-lg { font-size: 12px; }

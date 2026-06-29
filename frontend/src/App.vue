@@ -1,7 +1,14 @@
 <template>
-  <v-app>
+  <v-app class="st-app-root">
     <!-- ── Navigation Drawer ─────────────────────────── -->
-    <v-navigation-drawer v-model="drawer" :rail="rail" permanent color="surface" class="nav-drawer">
+    <v-navigation-drawer
+      v-model="drawer"
+      :rail="rail"
+      :width="272"
+      permanent
+      color="surface"
+      class="nav-drawer st-drawer-surface"
+    >
       <!-- Brand Header -->
       <div class="nav-brand" :class="{ 'nav-brand-rail': rail }">
         <div class="brand-icon-wrap">
@@ -53,16 +60,16 @@
     </v-navigation-drawer>
 
     <!-- ── App Bar ────────────────────────────────────── -->
-    <v-app-bar flat color="surface" class="app-bar-border">
+    <v-app-bar flat color="surface" class="app-bar-border st-topbar">
       <v-app-bar-nav-icon variant="text" @click="rail = !rail" />
       <v-app-bar-title>
         <span class="font-weight-bold text-on-surface">Super Trump</span>
         <span class="text-caption ml-2 text-medium-emphasis">Scoring System</span>
       </v-app-bar-title>
       <v-spacer />
-      <v-chip color="secondary" size="small" label variant="tonal" class="mr-3">
+      <v-chip color="primary" size="small" label variant="tonal" class="mr-3">
         <v-icon start size="14">mdi-cards</v-icon>
-        Card Game
+        Live Scoring
       </v-chip>
     </v-app-bar>
 
@@ -146,8 +153,18 @@ const rulesSections = [
 .rules-scroll { max-height: 75vh; }
 .preline-text { white-space: pre-line; }
 
+.st-app-root {
+  color: var(--st-text);
+}
+
 /* ── Nav Drawer brand header ─────────────────────────────── */
-.nav-drawer { border-right: 1px solid rgba(var(--st-primary-rgb), 0.12) !important; }
+.nav-drawer {
+  border-right: 1px solid var(--st-panel-border) !important;
+}
+
+.st-drawer-surface {
+  box-shadow: 0 2px 14px rgba(16, 24, 40, 0.06);
+}
 
 .nav-brand {
   display: flex;
@@ -166,33 +183,51 @@ const rulesSections = [
 .brand-icon-wrap {
   width: 38px; height: 38px;
   border-radius: 10px;
-  background: rgba(var(--st-primary-rgb), 0.12);
-  box-shadow: 0 0 18px rgba(var(--st-primary-rgb), 0.14);
+  background: rgba(var(--st-primary-rgb), 0.14);
+  box-shadow: 0 8px 14px rgba(var(--st-primary-rgb), 0.18);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
 .brand-text-wrap { flex-grow: 1; min-width: 0; }
 .brand-name {
-  font-size: 0.9rem;
+  font-size: 0.98rem;
   font-weight: 800;
   color: rgb(var(--v-theme-on-surface));
   line-height: 1.2;
   white-space: nowrap;
 }
 .brand-tagline {
-  font-size: 9px;
-  color: rgba(var(--v-theme-on-surface), 0.5);
-  letter-spacing: 1.5px;
+  font-size: 10px;
+  color: var(--st-text-muted);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+:deep(.nav-item) {
+  margin-inline: 8px;
+  min-height: 42px;
+  border-radius: 12px;
+}
+
+:deep(.nav-item .v-list-item-title) {
+  font-weight: 600;
 }
 
 /* Active nav item highlight */
 :deep(.nav-item.v-list-item--active) {
-  background: rgba(var(--st-primary-rgb), 0.1) !important;
+  background: rgba(var(--st-primary-rgb), 0.14) !important;
 }
 
 /* App bar bottom accent */
-.app-bar-border { border-bottom: 1px solid rgba(var(--st-primary-rgb), 0.12) !important; }
+.app-bar-border {
+  border-bottom: 1px solid var(--st-panel-border) !important;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+}
+
+.st-topbar {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(12px);
+}
 
 /* Brand transition */
 .brand-fade-enter-active, .brand-fade-leave-active { transition: opacity 0.15s; }
