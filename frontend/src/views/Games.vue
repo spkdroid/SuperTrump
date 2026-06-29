@@ -211,6 +211,9 @@
             class="text-caption text-error mt-2">
             Minimum 3 players required.
           </div>
+          <div v-if="newGame.playerIds.length > 10" class="text-caption text-error mt-2">
+            Maximum 10 players allowed.
+          </div>
         </v-card-text>
         <v-divider />
         <v-card-actions class="pa-4">
@@ -220,7 +223,7 @@
             color="primary"
             rounded="lg"
             :loading="saving"
-            :disabled="newGame.playerIds.length < 3"
+            :disabled="newGame.playerIds.length < 3 || newGame.playerIds.length > 10"
             @click="createGame"
           >
             Start Game
@@ -285,7 +288,8 @@ function topOf(players)   { return (players || []).slice().sort((a,b) => b.curre
 function togglePlayer(id) {
   const idx = newGame.value.playerIds.indexOf(id)
   if (idx >= 0) newGame.value.playerIds.splice(idx, 1)
-  else          newGame.value.playerIds.push(id)
+  else if (newGame.value.playerIds.length < 10) newGame.value.playerIds.push(id)
+  else store.notify('Maximum 10 players allowed per game', 'warning')
 }
 
 function confirmDelete(game) { deletingGame.value = game; deleteDialog.value = true }
@@ -300,6 +304,12 @@ async function fetchGames() {
 }
 
 async function createGame() {
+  const selectedCount = newGame.value.playerIds.length
+  if (selectedCount < 3 || selectedCount > 10) {
+    store.notify('Select between 3 and 10 players', 'warning')
+    return
+  }
+
   saving.value = true
   try {
     const res = await gamesAPI.create(newGame.value)

@@ -418,6 +418,20 @@ docker compose down -v           # Wipe the volume
 docker compose up --build -d     # Fresh start
 ```
 
+### Error: `new row for relation "games" violates check constraint "games_num_players_check"`
+
+This means the game was created with an invalid player count for your DB constraint.
+
+- Valid range is **3 to 10 players**.
+- If you already selected 3 to 10 players and still see this error, your Postgres volume likely has an older schema.
+
+```bash
+docker compose down -v
+docker compose up --build -d
+```
+
+> Warning: `down -v` deletes all local game data.
+
 ### Scores look wrong after an undo
 
 The undo (`DELETE /rounds/:id`) reverses every player's score atomically in a transaction. If you suspect data drift, open a DB shell and verify:

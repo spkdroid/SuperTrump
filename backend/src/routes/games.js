@@ -49,23 +49,47 @@ router.get('/:id', async (req, res, next) => {
 // POST /api/games
 router.post('/', async (req, res, next) => {
   const { name, playerIds } = req.body;
-  if (!Array.isArray(playerIds) || playerIds.length < 3)
-    return res.status(400).json({ error: 'At least 3 players are required' });
+  if (!Array.isArray(playerIds)) {
+    return res.status(400).json({ error: 'playerIds must be an array' });
+  }
+
+  const normalizedPlayerIds = [...new Set(
+    playerIds
+      .map((id) => Number.parseInt(id, 10))
+      .filter((id) => Number.isInteger(id) && id > 0)
+  )];
+
+  if (normalizedPlayerIds.length !== playerIds.length) {
+    return res.status(400).json({ error: 'playerIds must contain unique numeric IDs' });
+  }
+
+  if (normalizedPlayerIds.length < 3 || normalizedPlayerIds.length > 10) {
+    return res.status(400).json({ error: 'Game must have between 3 and 10 players' });
+  }
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
+    const existingPlayersRes = await client.query(
+      `SELECT COUNT(*)::int AS count FROM players WHERE id = ANY($1::int[])`,
+      [normalizedPlayerIds]
+    );
+    if (existingPlayersRes.rows[0].count !== normalizedPlayerIds.length) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ error: 'One or more selected players do not exist' });
+    }
+
     const gRes = await client.query(
       `INSERT INTO games (name, num_players) VALUES ($1, $2) RETURNING *`,
-      [name?.trim() || `Game ${new Date().toLocaleDateString()}`, playerIds.length]
+      [name?.trim() || `Game ${new Date().toLocaleDateString()}`, normalizedPlayerIds.length]
     );
     const game = gRes.rows[0];
 
-    for (let i = 0; i < playerIds.length; i++) {
+    for (let i = 0; i < normalizedPlayerIds.length; i++) {
       await client.query(
         `INSERT INTO game_players (game_id, player_id, seat_number) VALUES ($1, $2, $3)`,
-        [game.id, playerIds[i], i + 1]
+        [game.id, normalizedPlayerIds[i], i + 1]
       );
     }
 
@@ -77,6 +101,11 @@ router.post('/', async (req, res, next) => {
     res.status(201).json(full.rows[0]);
   } catch (err) {
     await client.query('ROLLBACK');
+    if (err.code === '23514' && err.constraint === 'games_num_players_check') {
+      return res.status(400).json({
+        error: 'Game player count is invalid for this database. Choose 3 to 10 players. If you already did, recreate the DB volume to refresh schema.'
+      });
+    }
     next(err);
   } finally { client.release(); }
 });
