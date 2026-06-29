@@ -1,6 +1,5 @@
 <template>
-  <v-card color="surface" rounded="xl" elevation="0"
-    style="border: 1px solid rgba(74,222,128,0.12);">
+  <v-card color="surface" rounded="xl" elevation="0" class="st-panel">
     <v-card-title class="pa-5 pb-3 d-flex align-center">
       <v-icon color="primary" class="mr-2">mdi-history</v-icon>
       Round History
@@ -38,7 +37,7 @@
           <td>
             <div class="d-flex align-center gap-2 py-2">
               <v-avatar :color="round.bidder_color" size="26" rounded>
-                <span style="font-size:8px; font-weight:700; color:rgba(0,0,0,0.7);">
+                <span class="st-avatar-initial-xs">
                   {{ initials(round.bidder_name) }}
                 </span>
               </v-avatar>
@@ -117,8 +116,7 @@
             <v-expand-transition>
               <div
                 v-if="expanded"
-                class="pa-4 mx-5 mb-3 rounded-lg"
-                style="background: rgba(74,222,128,0.04); border: 1px solid rgba(74,222,128,0.1);"
+                class="pa-4 mx-5 mb-3 rounded-lg round-detail-panel"
               >
                 <div v-if="expandedRound" class="d-flex flex-wrap gap-3">
                   <div
@@ -214,12 +212,17 @@ async function deleteRound() {
 
 <style scoped>
 .rounds-table thead tr th {
-  background: rgba(74,222,128,0.04) !important;
-  color: #9CA3AF !important;
+  background: rgba(var(--st-primary-rgb), 0.05) !important;
+  color: rgba(var(--v-theme-on-surface), 0.62) !important;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 .round-row { cursor: pointer; transition: background 0.15s; }
-.round-row:hover { background: rgba(74,222,128,0.04) !important; }
+.round-row:hover { background: rgba(var(--st-primary-rgb), 0.05) !important; }
+
+.round-detail-panel {
+  background: rgba(var(--st-primary-rgb), 0.04);
+  border: 1px solid rgba(var(--st-primary-rgb), 0.14);
+}
 </style>

@@ -36,9 +36,9 @@ export const BID_TYPE_LABELS = {
 export const SUIT_META = {
   hearts:   { icon: '♥', label: 'Hearts',   color: '#F87171' },
   diamonds: { icon: '♦', label: 'Diamonds', color: '#FB923C' },
-  clubs:    { icon: '♣', label: 'Clubs',    color: '#E2F4E6' },
-  spades:   { icon: '♠', label: 'Spades',   color: '#E2F4E6' },
-  no_trump: { icon: '🚫', label: 'No Trump', color: '#9CA3AF' },
+  clubs:    { icon: '♣', label: 'Clubs',    color: '#1D4ED8' },
+  spades:   { icon: '♠', label: 'Spades',   color: '#0F172A' },
+  no_trump: { icon: '🚫', label: 'No Trump', color: '#64748B' },
 }
 
 export function getBidType(bidAmount, wasUpgradedTo56 = false) {

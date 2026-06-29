@@ -41,8 +41,7 @@
           color="surface"
           rounded="xl"
           elevation="0"
-          class="game-card"
-          style="border: 1px solid rgba(74,222,128,0.12); cursor: pointer;"
+          class="game-card st-panel st-clickable"
           @click="$router.push(`/games/${game.id}`)"
         >
           <!-- Card Header -->
@@ -88,7 +87,7 @@
                 {{ idx === 0 ? 'mdi-crown' : 'mdi-minus' }}
               </v-icon>
               <v-avatar :color="player.avatar_color" size="20" class="mr-2">
-                <span style="font-size: 8px; font-weight: 700; color: rgba(0,0,0,0.7);">
+                <span class="st-avatar-initial-xs">
                   {{ initials(player.name) }}
                 </span>
               </v-avatar>
@@ -112,10 +111,9 @@
                 :key="p.id"
                 :color="p.avatar_color"
                 size="28"
-                class="ml-n2"
-                style="border: 2px solid rgb(var(--v-theme-surface));"
+                class="ml-n2 st-stack-avatar"
               >
-                <span style="font-size: 9px; font-weight: 700; color: rgba(0,0,0,0.7);">
+                <span class="st-avatar-initial-sm">
                   {{ initials(p.name) }}
                 </span>
               </v-avatar>
@@ -123,10 +121,9 @@
                 v-if="(game.players || []).length > 5"
                 color="surface-variant"
                 size="28"
-                class="ml-n2"
-                style="border: 2px solid rgb(var(--v-theme-surface));"
+                class="ml-n2 st-stack-avatar"
               >
-                <span style="font-size: 9px;">+{{ game.players.length - 5 }}</span>
+                <span class="st-avatar-initial-sm">+{{ game.players.length - 5 }}</span>
               </v-avatar>
             </div>
             <v-spacer />
@@ -184,12 +181,11 @@
                 :color="newGame.playerIds.includes(p.id) ? 'primary' : 'surface-variant'"
                 rounded="lg"
                 elevation="0"
-                class="pa-3 d-flex align-center gap-3"
-                style="cursor: pointer;"
+                class="pa-3 d-flex align-center gap-3 st-clickable"
                 @click="togglePlayer(p.id)"
               >
                 <v-avatar :color="p.avatar_color" size="32">
-                  <span class="font-weight-bold" style="font-size: 11px; color: rgba(0,0,0,0.7);">
+                  <span class="st-avatar-initial-md">
                     {{ initials(p.name) }}
                   </span>
                 </v-avatar>
@@ -334,6 +330,9 @@ onMounted(fetchGames)
 </script>
 
 <style scoped>
-.game-card { transition: transform 0.2s; }
-.game-card:hover { transform: translateY(-2px); }
+.game-card { transition: transform 0.2s, box-shadow 0.2s; }
+.game-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--st-hover-shadow);
+}
 </style>

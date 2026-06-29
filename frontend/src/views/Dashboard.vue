@@ -40,8 +40,7 @@
     <v-row>
       <!-- Active Games -->
       <v-col cols="12" md="8">
-        <v-card color="surface" rounded="xl" elevation="0"
-          style="border: 1px solid rgba(74,222,128,0.12);">
+        <v-card color="surface" rounded="xl" elevation="0" class="st-panel">
           <v-card-title class="d-flex align-center pa-5 pb-3">
             <v-icon color="primary" class="mr-2">mdi-cards-playing</v-icon>
             Active Games
@@ -83,10 +82,9 @@
                       :key="p.id"
                       :color="p.avatar_color"
                       size="26"
-                      class="ml-n2"
-                      style="border: 2px solid rgb(var(--v-theme-surface));"
+                      class="ml-n2 st-stack-avatar"
                     >
-                      <span class="text-caption font-weight-bold" style="font-size: 9px;">
+                      <span class="st-avatar-initial-sm">
                         {{ initials(p.name) }}
                       </span>
                     </v-avatar>
@@ -94,10 +92,9 @@
                       v-if="(game.players || []).length > 4"
                       color="surface-variant"
                       size="26"
-                      class="ml-n2"
-                      style="border: 2px solid rgb(var(--v-theme-surface));"
+                      class="ml-n2 st-stack-avatar"
                     >
-                      <span style="font-size: 9px;">+{{ game.players.length - 4 }}</span>
+                      <span class="st-avatar-initial-sm">+{{ game.players.length - 4 }}</span>
                     </v-avatar>
                   </div>
                 </template>
@@ -109,8 +106,7 @@
 
       <!-- Top Players -->
       <v-col cols="12" md="4">
-        <v-card color="surface" rounded="xl" elevation="0"
-          style="border: 1px solid rgba(74,222,128,0.12); height: 100%;">
+        <v-card color="surface" rounded="xl" elevation="0" class="st-panel st-panel-fill">
           <v-card-title class="d-flex align-center pa-5 pb-3">
             <v-icon color="secondary" class="mr-2">mdi-trophy</v-icon>
             Top Players
@@ -142,7 +138,7 @@
                       #{{ i + 1 }}
                     </span>
                     <v-avatar :color="player.avatar_color" size="30">
-                      <span class="font-weight-bold" style="font-size: 10px;">{{ initials(player.name) }}</span>
+                      <span class="st-avatar-initial-md">{{ initials(player.name) }}</span>
                     </v-avatar>
                   </div>
                 </template>
@@ -171,8 +167,7 @@
     <!-- ── Scoring Quick Reference ─────────────────────────── -->
     <v-row class="mt-2">
       <v-col cols="12">
-        <v-card color="surface" rounded="xl" elevation="0"
-          style="border: 1px solid rgba(74,222,128,0.12);">
+        <v-card color="surface" rounded="xl" elevation="0" class="st-panel">
           <v-card-title class="pa-5 pb-3">
             <v-icon color="info" class="mr-2">mdi-calculator-variant</v-icon>
             Scoring Quick Reference
@@ -263,18 +258,18 @@ onMounted(async () => {
 .stat-card {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.05) !important;
+  border: 1px solid var(--st-panel-border) !important;
   transition: transform 0.2s, box-shadow 0.2s;
 }
-.stat-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.3) !important; }
+.stat-card:hover { transform: translateY(-3px); box-shadow: var(--st-hover-shadow) !important; }
 .stat-card::after {
   content: '';
   position: absolute; top: 0; left: 0; right: 0; height: 2px;
 }
-.stat-accent-primary::after   { background: linear-gradient(90deg, transparent, #4ADE80, transparent); }
-.stat-accent-info::after      { background: linear-gradient(90deg, transparent, #60A5FA, transparent); }
-.stat-accent-warning::after   { background: linear-gradient(90deg, transparent, #FBBF24, transparent); }
-.stat-accent-secondary::after { background: linear-gradient(90deg, transparent, #FCD34D, transparent); }
+.stat-accent-primary::after   { background: linear-gradient(90deg, transparent, rgb(var(--st-primary-rgb)), transparent); }
+.stat-accent-info::after      { background: linear-gradient(90deg, transparent, #0EA5E9, transparent); }
+.stat-accent-warning::after   { background: linear-gradient(90deg, transparent, #D97706, transparent); }
+.stat-accent-secondary::after { background: linear-gradient(90deg, transparent, #3B82F6, transparent); }
 
 .stat-icon-wrap {
   width: 42px; height: 42px;
@@ -282,10 +277,10 @@ onMounted(async () => {
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.si-primary   { background: rgba(74,222,128,0.12); }
-.si-info      { background: rgba(96,165,250,0.12); }
-.si-warning   { background: rgba(251,191,36,0.12); }
-.si-secondary { background: rgba(252,211,77,0.12); }
+.si-primary   { background: rgba(var(--st-primary-rgb), 0.12); }
+.si-info      { background: rgba(14,165,233,0.12); }
+.si-warning   { background: rgba(217,119,6,0.14); }
+.si-secondary { background: rgba(59,130,246,0.12); }
 
 /* ── Scoring ref cards ─────────────────────────── */
 .ref-card {
@@ -293,8 +288,8 @@ onMounted(async () => {
   transition: transform 0.15s;
 }
 .ref-card:hover { transform: translateY(-2px); }
-.ref-primary { border-left-color: #4ADE80 !important; }
-.ref-info    { border-left-color: #60A5FA !important; }
-.ref-error   { border-left-color: #F87171 !important; }
-.ref-warning { border-left-color: #FBBF24 !important; }
+.ref-primary { border-left-color: rgb(var(--st-primary-rgb)) !important; }
+.ref-info    { border-left-color: #0EA5E9 !important; }
+.ref-error   { border-left-color: #DC2626 !important; }
+.ref-warning { border-left-color: #D97706 !important; }
 </style>

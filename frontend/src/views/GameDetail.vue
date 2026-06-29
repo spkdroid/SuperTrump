@@ -70,8 +70,7 @@
       <v-row class="mb-4">
         <!-- Live Leaderboard -->
         <v-col cols="12" md="5">
-          <v-card color="surface" rounded="xl" elevation="0"
-            style="border: 1px solid rgba(74,222,128,0.12); height:100%;">
+          <v-card color="surface" rounded="xl" elevation="0" class="st-panel st-panel-fill">
             <v-card-title class="pa-5 pb-3 d-flex align-center">
               <v-icon color="secondary" class="mr-2">mdi-trophy</v-icon>
               Standings
@@ -97,7 +96,7 @@
 
                 <!-- Avatar + Name -->
                 <v-avatar :color="entry.avatar_color" size="34" rounded="lg" class="mr-3">
-                  <span class="font-weight-bold" style="font-size: 11px; color: rgba(0,0,0,0.7);">
+                  <span class="st-avatar-initial-md">
                     {{ initials(entry.player_name) }}
                   </span>
                 </v-avatar>
@@ -132,8 +131,7 @@
 
         <!-- Score Chart -->
         <v-col cols="12" md="7">
-          <v-card color="surface" rounded="xl" elevation="0"
-            style="border: 1px solid rgba(74,222,128,0.12); height:100%;">
+          <v-card color="surface" rounded="xl" elevation="0" class="st-panel st-panel-fill">
             <v-card-title class="pa-5 pb-3 d-flex align-center">
               <v-icon color="info" class="mr-2">mdi-chart-line</v-icon>
               Score Progression
@@ -203,7 +201,7 @@
           <div class="winner-header">
             <div class="trophy-bounce">🏆</div>
             <h1 class="game-over-text">Game Over!</h1>
-            <p class="text-medium-emphasis mb-2" style="font-size:14px;">{{ game?.name }}</p>
+            <p class="text-medium-emphasis mb-2 winner-subtitle">{{ game?.name }}</p>
           </div>
 
           <!-- Winner showcase -->
@@ -215,7 +213,7 @@
                 rounded="xl"
                 class="winner-avatar-anim"
               >
-                <span class="text-h4 font-weight-black" style="color:rgba(0,0,0,0.75)">
+                <span class="winner-avatar-initial">
                   {{ initials(leaderboard[0].player_name) }}
                 </span>
               </v-avatar>
@@ -232,30 +230,30 @@
             <!-- 2nd -->
             <div v-if="leaderboard[1]" class="podium-slot">
               <v-avatar :color="leaderboard[1].avatar_color" size="46" rounded="lg">
-                <span style="font-size:12px;font-weight:700;color:rgba(0,0,0,0.7)">{{ initials(leaderboard[1].player_name) }}</span>
+                <span class="st-avatar-initial-lg">{{ initials(leaderboard[1].player_name) }}</span>
               </v-avatar>
               <div class="podium-pname">{{ shortName(leaderboard[1].player_name) }}</div>
-              <div class="podium-pscore" style="color:#C0C0C0">{{ leaderboard[1].current_score >= 0 ? '+' : '' }}{{ leaderboard[1].current_score }}</div>
-              <div class="podium-block" style="height:50px;border-top:2px solid #C0C0C0;background:rgba(192,192,192,0.1);">🥈</div>
+              <div class="podium-pscore podium-pscore-silver">{{ leaderboard[1].current_score >= 0 ? '+' : '' }}{{ leaderboard[1].current_score }}</div>
+              <div class="podium-block podium-block-silver">🥈</div>
             </div>
             <!-- 1st pedestal -->
             <div class="podium-slot">
-              <div class="podium-block" style="height:76px;border-top:2px solid #FCD34D;background:rgba(252,211,77,0.12);">🥇</div>
+              <div class="podium-block podium-block-gold">🥇</div>
             </div>
             <!-- 3rd -->
             <div v-if="leaderboard[2]" class="podium-slot">
               <v-avatar :color="leaderboard[2].avatar_color" size="46" rounded="lg">
-                <span style="font-size:12px;font-weight:700;color:rgba(0,0,0,0.7)">{{ initials(leaderboard[2].player_name) }}</span>
+                <span class="st-avatar-initial-lg">{{ initials(leaderboard[2].player_name) }}</span>
               </v-avatar>
               <div class="podium-pname">{{ shortName(leaderboard[2].player_name) }}</div>
-              <div class="podium-pscore" style="color:#CD7F32">{{ leaderboard[2].current_score >= 0 ? '+' : '' }}{{ leaderboard[2].current_score }}</div>
-              <div class="podium-block" style="height:36px;border-top:2px solid #CD7F32;background:rgba(205,127,50,0.1);">🥉</div>
+              <div class="podium-pscore podium-pscore-bronze">{{ leaderboard[2].current_score >= 0 ? '+' : '' }}{{ leaderboard[2].current_score }}</div>
+              <div class="podium-block podium-block-bronze">🥉</div>
             </div>
           </div>
 
           <!-- Full standings -->
           <v-card class="standings-card" color="surface" rounded="xl" elevation="2">
-            <div class="pa-4 pb-0 text-caption font-weight-bold text-medium-emphasis" style="letter-spacing:.12em">
+            <div class="pa-4 pb-0 text-caption font-weight-bold text-medium-emphasis standings-title">
               FINAL STANDINGS
             </div>
             <v-list bg-color="transparent" density="compact" class="pb-2">
@@ -270,7 +268,7 @@
                 <template #prepend>
                   <span class="medal-icon mr-2">{{ ['🥇','🥈','🥉'][idx] ?? `#${idx+1}` }}</span>
                   <v-avatar :color="entry.avatar_color" size="30" rounded="lg" class="mr-3">
-                    <span style="font-size:9px;font-weight:700;color:rgba(0,0,0,0.7)">{{ initials(entry.player_name) }}</span>
+                    <span class="st-avatar-initial-sm">{{ initials(entry.player_name) }}</span>
                   </v-avatar>
                 </template>
                 <v-list-item-title class="text-body-2 font-weight-medium">{{ entry.player_name }}</v-list-item-title>
@@ -297,7 +295,7 @@
               New Game
             </v-btn>
             <v-btn
-              size="large" variant="tonal" color="white" rounded="pill"
+              size="large" variant="outlined" color="primary" rounded="pill"
               prepend-icon="mdi-eye"
               @click="winnerDialog = false"
             >
@@ -342,7 +340,7 @@ const confettiStyles = Array.from({ length: 65 }, (_, i) => ({
   left:              `${(i * 17 + 7) % 100}%`,
   animationDelay:    `${((i * 0.13) % 4).toFixed(2)}s`,
   animationDuration: `${(2.5 + (i * 0.19) % 2.5).toFixed(2)}s`,
-  background:        ['#4ADE80','#FCD34D','#60A5FA','#F87171','#C084FC','#34D399','#FB923C','#38BDF8'][i % 8],
+  background:        ['#1D4ED8','#2563EB','#0EA5E9','#3B82F6','#38BDF8','#60A5FA','#93C5FD','#D97706'][i % 8],
   width:             `${6 + (i % 5) * 2}px`,
   height:            `${10 + (i % 4) * 3}px`,
   borderRadius:      i % 3 === 0 ? '50%' : '2px',
@@ -355,15 +353,15 @@ const chartData = computed(() => {
 
 const chartOptions = computed(() => ({
   chart:  { background: 'transparent', toolbar: { show: false }, animations: { enabled: true } },
-  theme:  { mode: 'dark' },
+  theme:  { mode: 'light' },
   colors: chartData.value.colors,
   stroke: { curve: 'smooth', width: 2.5 },
   markers: { size: 4 },
-  xaxis:  { categories: chartData.value.categories, labels: { style: { colors: '#9CA3AF' } } },
-  yaxis:  { labels: { style: { colors: '#9CA3AF' }, formatter: v => (v >= 0 ? `+${v}` : `${v}`) } },
-  grid:   { borderColor: '#1B3320' },
-  legend: { labels: { colors: '#C4E8CA' } },
-  tooltip: { theme: 'dark' },
+  xaxis:  { categories: chartData.value.categories, labels: { style: { colors: '#64748B' } } },
+  yaxis:  { labels: { style: { colors: '#64748B' }, formatter: v => (v >= 0 ? `+${v}` : `${v}`) } },
+  grid:   { borderColor: '#D6E6FF' },
+  legend: { labels: { colors: '#1E3A8A' } },
+  tooltip: { theme: 'light' },
 }))
 
 async function fetchAll() {
@@ -415,18 +413,21 @@ onMounted(fetchAll)
 </script>
 
 <style scoped>
-.leader-row { background: rgba(74,222,128,0.05); }
+.leader-row { background: rgba(var(--st-primary-rgb), 0.06); }
+
 .rank-badge {
-  width: 28px; height: 28px;
-  display: flex; align-items: center; justify-content: center;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 8px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(var(--st-primary-rgb), 0.08);
 }
 
-/* ─────────── Winner Overlay ─────────────────────────────────────── */
 .winner-overlay {
   min-height: 100vh;
-  background: linear-gradient(160deg, #050e0c 0%, #06101c 50%, #140922 100%);
+  background: linear-gradient(165deg, #f8fbff 0%, #edf4ff 44%, #dbeafe 100%);
   overflow-y: auto;
   position: relative;
   display: flex;
@@ -435,129 +436,245 @@ onMounted(fetchAll)
   padding: 40px 16px 64px;
 }
 
-/* Confetti */
 .confetti-container {
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  pointer-events: none; overflow: hidden; z-index: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
 }
+
 .confetti-piece {
-  position: absolute; top: -20px;
+  position: absolute;
+  top: -20px;
   animation: confetti-fall linear infinite;
 }
+
 @keyframes confetti-fall {
-  0%   { transform: translateY(-20px)  rotate(0deg)   translateX(0px);   opacity: 1; }
-  50%  { transform: translateY(50vh)   rotate(360deg) translateX(15px);  opacity: 0.9; }
-  100% { transform: translateY(110vh)  rotate(720deg) translateX(-10px); opacity: 0; }
+  0% { transform: translateY(-20px) rotate(0deg) translateX(0); opacity: 1; }
+  50% { transform: translateY(50vh) rotate(360deg) translateX(15px); opacity: 0.9; }
+  100% { transform: translateY(110vh) rotate(720deg) translateX(-10px); opacity: 0; }
 }
 
-/* Content wrapper */
 .winner-content {
-  position: relative; z-index: 1;
-  width: 100%; max-width: 500px;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 500px;
   text-align: center;
-  display: flex; flex-direction: column; align-items: center; gap: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
 }
 
-/* Header */
-.winner-header { display: flex; flex-direction: column; align-items: center; }
+.winner-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .trophy-bounce {
-  font-size: 84px; line-height: 1;
+  font-size: 84px;
+  line-height: 1;
   display: inline-block;
-  filter: drop-shadow(0 0 24px rgba(252,211,77,0.55));
+  filter: drop-shadow(0 0 20px rgba(37, 99, 235, 0.28));
   animation: trophy-bounce 1s ease-in-out infinite alternate;
 }
+
 @keyframes trophy-bounce {
-  0%   { transform: translateY(0)    scale(1);    }
+  0% { transform: translateY(0) scale(1); }
   100% { transform: translateY(-14px) scale(1.07); }
 }
+
 .game-over-text {
-  font-size: 2.8rem; font-weight: 900; color: #fff;
-  text-shadow: 0 0 32px rgba(252,211,77,0.4), 0 2px 10px rgba(0,0,0,0.7);
-  margin: 8px 0 2px; letter-spacing: -1px;
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: #0f172a;
+  text-shadow: 0 0 24px rgba(37, 99, 235, 0.18);
+  margin: 8px 0 2px;
+  letter-spacing: -1px;
   animation: fade-up 0.5s ease 0s both;
 }
 
-/* Winner card */
-.winner-showcase {
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
-  animation: fade-up 0.5s ease 0.15s both;
-}
-.glow-ring {
-  padding: 4px; border-radius: 20px;
-  background: linear-gradient(135deg, #FCD34D, #4ADE80, #60A5FA, #C084FC);
-  animation: glow-pulse 2.2s ease-in-out infinite alternate;
-}
-@keyframes glow-pulse {
-  0%   { box-shadow: 0 0 24px rgba(252,211,77,0.35); }
-  100% { box-shadow: 0 0 60px rgba(74,222,128,0.55); }
-}
-.winner-avatar-anim { animation: avatar-pop 0.55s cubic-bezier(.34,1.56,.64,1) 0.1s both; }
-@keyframes avatar-pop {
-  0%   { transform: scale(0.5); opacity: 0; }
-  70%  { transform: scale(1.1); }
-  100% { transform: scale(1);   opacity: 1; }
-}
-.winner-name-text {
-  font-size: 1.8rem; font-weight: 800; color: #fff;
-  text-shadow: 0 2px 12px rgba(0,0,0,0.5);
-  animation: fade-up 0.4s ease 0.3s both;
-}
-.champion-badge {
-  background: linear-gradient(135deg, #F59E0B, #FCD34D);
-  color: #1a0800; font-weight: 900; font-size: 12px; letter-spacing: 3px;
-  padding: 5px 22px; border-radius: 20px;
-  animation: fade-up 0.4s ease 0.4s both;
-}
-.winner-score-big {
-  font-size: 3.8rem; font-weight: 900; color: #FCD34D;
-  text-shadow: 0 0 28px rgba(252,211,77,0.65);
-  letter-spacing: -2px; line-height: 1;
-  animation: score-pop 0.6s cubic-bezier(.34,1.56,.64,1) 0.5s both;
-}
-@keyframes score-pop {
-  0%   { transform: scale(0.4) translateY(16px); opacity: 0; }
-  100% { transform: scale(1)   translateY(0);    opacity: 1; }
+.winner-subtitle {
+  font-size: 14px;
 }
 
-/* Podium */
+.winner-showcase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  animation: fade-up 0.5s ease 0.15s both;
+}
+
+.glow-ring {
+  padding: 4px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb, #0ea5e9, #60a5fa);
+  animation: glow-pulse 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes glow-pulse {
+  0% { box-shadow: 0 0 18px rgba(37, 99, 235, 0.22); }
+  100% { box-shadow: 0 0 44px rgba(14, 165, 233, 0.3); }
+}
+
+.winner-avatar-anim {
+  animation: avatar-pop 0.55s cubic-bezier(.34, 1.56, .64, 1) 0.1s both;
+}
+
+.winner-avatar-initial {
+  font-size: 2rem;
+  font-weight: 900;
+  color: rgba(15, 23, 42, 0.75);
+}
+
+@keyframes avatar-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  70% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.winner-name-text {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #0f172a;
+  text-shadow: 0 2px 12px rgba(37, 99, 235, 0.16);
+  animation: fade-up 0.4s ease 0.3s both;
+}
+
+.champion-badge {
+  background: linear-gradient(135deg, #1d4ed8, #0ea5e9);
+  color: #fff;
+  font-weight: 900;
+  font-size: 12px;
+  letter-spacing: 3px;
+  padding: 5px 22px;
+  border-radius: 20px;
+  animation: fade-up 0.4s ease 0.4s both;
+}
+
+.winner-score-big {
+  font-size: 3.8rem;
+  font-weight: 900;
+  color: rgb(var(--st-primary-rgb));
+  text-shadow: 0 0 24px rgba(37, 99, 235, 0.3);
+  letter-spacing: -2px;
+  line-height: 1;
+  animation: score-pop 0.6s cubic-bezier(.34, 1.56, .64, 1) 0.5s both;
+}
+
+@keyframes score-pop {
+  0% { transform: scale(0.4) translateY(16px); opacity: 0; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
 .podium-wrap {
-  display: flex; align-items: flex-end; justify-content: center; gap: 4px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
   width: 100%;
   animation: fade-up 0.5s ease 0.6s both;
 }
-.podium-slot  { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.podium-block {
-  width: 92px; border-radius: 8px 8px 0 0;
-  display: flex; align-items: center; justify-content: center; font-size: 22px;
-}
-.podium-pname  { font-size: 11px; color: rgba(255,255,255,0.8); font-weight: 600; }
-.podium-pscore { font-size: 11px; font-weight: 700; }
 
-/* Standings */
+.podium-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.podium-block {
+  width: 92px;
+  border-radius: 8px 8px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.podium-block-silver {
+  height: 50px;
+  border-top: 2px solid #94a3b8;
+  background: rgba(148, 163, 184, 0.14);
+}
+
+.podium-block-gold {
+  height: 76px;
+  border-top: 2px solid rgb(var(--st-primary-rgb));
+  background: rgba(var(--st-primary-rgb), 0.14);
+}
+
+.podium-block-bronze {
+  height: 36px;
+  border-top: 2px solid #b45309;
+  background: rgba(180, 83, 9, 0.12);
+}
+
+.podium-pname {
+  font-size: 11px;
+  color: rgba(var(--v-theme-on-surface), 0.72);
+  font-weight: 600;
+}
+
+.podium-pscore {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.podium-pscore-silver {
+  color: #94a3b8;
+}
+
+.podium-pscore-bronze {
+  color: #b45309;
+}
+
 .standings-card {
   width: 100%;
-  border: 1px solid rgba(74,222,128,0.15) !important;
+  border: 1px solid var(--st-panel-border-strong) !important;
   animation: fade-up 0.5s ease 0.7s both;
 }
+
+.standings-title {
+  letter-spacing: 0.12em;
+}
+
 .standing-row {
   animation: slide-in 0.35s ease both;
 }
+
 @keyframes slide-in {
   from { transform: translateX(-20px); opacity: 0; }
-  to   { transform: translateX(0);     opacity: 1; }
+  to { transform: translateX(0); opacity: 1; }
 }
-.standing-winner { background: rgba(252,211,77,0.05) !important; }
-.medal-icon { font-size: 18px; min-width: 24px; text-align: center; }
 
-/* Actions */
+.standing-winner {
+  background: rgba(var(--st-primary-rgb), 0.08) !important;
+}
+
+.medal-icon {
+  font-size: 18px;
+  min-width: 24px;
+  text-align: center;
+}
+
 .winner-actions {
-  display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
   animation: fade-up 0.4s ease 1s both;
 }
 
-/* Shared keyframe */
 @keyframes fade-up {
   from { transform: translateY(22px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+  to { transform: translateY(0); opacity: 1; }
 }
 </style>

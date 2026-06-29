@@ -9,6 +9,7 @@ import App from './App.vue'
 
 import 'vuetify/styles'
 import '@mdi/font/css/materialdesignicons.css'
+import './styles/theme.css'
 
 const vuetify = createVuetify({
   components,
@@ -18,24 +19,24 @@ const vuetify = createVuetify({
     defaultTheme: 'supertrump',
     themes: {
       supertrump: {
-        dark: true,
+        dark: false,
         colors: {
-          background:             '#090E09',
-          surface:                '#0F1810',
-          'surface-variant':      '#162B1B',
-          primary:                '#4ADE80',
-          'primary-darken-1':     '#22C55E',
-          secondary:              '#FCD34D',
-          'secondary-darken-1':   '#F59E0B',
-          error:                  '#F87171',
-          info:                   '#60A5FA',
-          success:                '#4ADE80',
-          warning:                '#FBBF24',
-          'on-background':        '#DCF0E2',
-          'on-surface':           '#C4E8CA',
-          'on-surface-variant':   '#7BAE8A',
-          'on-primary':           '#052E16',
-          'on-secondary':         '#1C1000',
+          background:             '#F4F8FF',
+          surface:                '#FFFFFF',
+          'surface-variant':      '#EAF2FF',
+          primary:                '#1D4ED8',
+          'primary-darken-1':     '#1E40AF',
+          secondary:              '#0EA5E9',
+          'secondary-darken-1':   '#0284C7',
+          error:                  '#DC2626',
+          info:                   '#0284C7',
+          success:                '#16A34A',
+          warning:                '#D97706',
+          'on-background':        '#0F172A',
+          'on-surface':           '#0F172A',
+          'on-surface-variant':   '#475569',
+          'on-primary':           '#FFFFFF',
+          'on-secondary':         '#FFFFFF',
         },
       },
     },

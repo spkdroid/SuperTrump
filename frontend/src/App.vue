@@ -23,7 +23,7 @@
         />
       </div>
 
-      <v-divider style="opacity:0.08" />
+      <v-divider class="soft-divider" />
 
       <v-list density="compact" nav class="mt-2">
         <v-list-item
@@ -39,7 +39,7 @@
       </v-list>
 
       <template #append>
-        <v-divider style="opacity:0.08" />
+        <v-divider class="soft-divider" />
         <v-list density="compact" nav class="py-2">
           <v-list-item
             prepend-icon="mdi-book-open-variant"
@@ -98,10 +98,10 @@
           <v-btn icon="mdi-close" variant="text" @click="rulesDialog = false" />
         </v-card-title>
         <v-divider />
-        <v-card-text class="pa-4" style="max-height: 75vh;">
+        <v-card-text class="pa-4 rules-scroll">
           <div v-for="section in rulesSections" :key="section.title" class="mb-4">
             <div class="text-primary font-weight-bold text-subtitle-1 mb-2">{{ section.title }}</div>
-            <div class="text-body-2 text-medium-emphasis" style="white-space: pre-line;">{{ section.text }}</div>
+            <div class="text-body-2 text-medium-emphasis preline-text">{{ section.text }}</div>
           </div>
         </v-card-text>
       </v-card>
@@ -141,23 +141,13 @@ const rulesSections = [
 ]
 </script>
 
-<style>
-:root { --v-theme-background: #090E09; }
-
-body { background-color: #090E09 !important; }
-
-.v-application { background-color: #090E09 !important; }
-
-/* Smooth scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #0F1810; }
-::-webkit-scrollbar-thumb { background: rgba(74,222,128,0.2); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(74,222,128,0.35); }
-</style>
-
 <style scoped>
+.soft-divider { opacity: 0.1; }
+.rules-scroll { max-height: 75vh; }
+.preline-text { white-space: pre-line; }
+
 /* ── Nav Drawer brand header ─────────────────────────────── */
-.nav-drawer { border-right: 1px solid rgba(74,222,128,0.07) !important; }
+.nav-drawer { border-right: 1px solid rgba(var(--st-primary-rgb), 0.12) !important; }
 
 .nav-brand {
   display: flex;
@@ -176,8 +166,8 @@ body { background-color: #090E09 !important; }
 .brand-icon-wrap {
   width: 38px; height: 38px;
   border-radius: 10px;
-  background: rgba(74,222,128,0.12);
-  box-shadow: 0 0 18px rgba(74,222,128,0.15);
+  background: rgba(var(--st-primary-rgb), 0.12);
+  box-shadow: 0 0 18px rgba(var(--st-primary-rgb), 0.14);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
@@ -185,24 +175,24 @@ body { background-color: #090E09 !important; }
 .brand-name {
   font-size: 0.9rem;
   font-weight: 800;
-  color: #fff;
+  color: rgb(var(--v-theme-on-surface));
   line-height: 1.2;
   white-space: nowrap;
 }
 .brand-tagline {
   font-size: 9px;
-  color: rgba(255,255,255,0.3);
+  color: rgba(var(--v-theme-on-surface), 0.5);
   letter-spacing: 1.5px;
   text-transform: uppercase;
 }
 
 /* Active nav item highlight */
 :deep(.nav-item.v-list-item--active) {
-  background: rgba(74,222,128,0.1) !important;
+  background: rgba(var(--st-primary-rgb), 0.1) !important;
 }
 
 /* App bar bottom accent */
-.app-bar-border { border-bottom: 1px solid rgba(74,222,128,0.08) !important; }
+.app-bar-border { border-bottom: 1px solid rgba(var(--st-primary-rgb), 0.12) !important; }
 
 /* Brand transition */
 .brand-fade-enter-active, .brand-fade-leave-active { transition: opacity 0.15s; }

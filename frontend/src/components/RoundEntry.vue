@@ -772,10 +772,10 @@ function togglePartnerCard(id) {
 }
 
 const suitOptions = [
-  { value: 'spades',   icon: '♠', label: 'Spades',   color: 'grey-lighten-1', textColor: '#E2F4E6' },
+  { value: 'spades',   icon: '♠', label: 'Spades',   color: 'grey-lighten-1', textColor: '#0F172A' },
   { value: 'hearts',   icon: '♥', label: 'Hearts',   color: 'error',          textColor: '#F87171' },
   { value: 'diamonds', icon: '♦', label: 'Diamonds', color: 'warning',        textColor: '#FBBF24' },
-  { value: 'clubs',    icon: '♣', label: 'Clubs',    color: 'success',        textColor: '#4ADE80' },
+  { value: 'clubs',    icon: '♣', label: 'Clubs',    color: 'info',           textColor: '#1D4ED8' },
   { value: 'no_trump', icon: '🚫', label: 'No Trump', color: 'grey',          textColor: '#9CA3AF' },
 ]
 
@@ -830,17 +830,17 @@ async function saveRound() {
   border-radius: 12px;
   cursor: pointer;
   border: 2px solid transparent;
-  background: rgba(255,255,255,0.04);
+  background: rgba(var(--st-primary-rgb), 0.05);
   transition: all 0.15s;
   user-select: none;
 }
-.player-chip:hover    { background: rgba(74,222,128,0.08); }
-.player-chip.selected { border-color: #4ADE80; background: rgba(74,222,128,0.12); }
-.player-chip.selected-partner { border-color: #22C55E; background: rgba(34,197,94,0.12); }
+.player-chip:hover    { background: rgba(var(--st-primary-rgb), 0.1); }
+.player-chip.selected { border-color: rgb(var(--st-primary-rgb)); background: rgba(var(--st-primary-rgb), 0.16); }
+.player-chip.selected-partner { border-color: #0EA5E9; background: rgba(14,165,233,0.14); }
 
 .score-preview-table thead tr th {
-  background: rgba(74,222,128,0.06) !important;
-  color: #9CA3AF !important;
+  background: rgba(var(--st-primary-rgb), 0.08) !important;
+  color: rgba(var(--v-theme-on-surface), 0.62) !important;
   font-size: 11px;
 }
 
@@ -875,7 +875,7 @@ async function saveRound() {
   max-width: 58px;
   aspect-ratio: 5 / 7;
   border-radius: 6px;
-  background: #f8f4ec;
+  background: #ffffff;
   border: 2px solid transparent;
   cursor: pointer;
   display: flex;
@@ -883,19 +883,19 @@ async function saveRound() {
   align-items: center;
   justify-content: space-between;
   padding: 4px 3px 3px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.16);
   transition: transform 0.13s, box-shadow 0.13s, border-color 0.13s;
   user-select: none;
 }
 .mini-card:hover:not(.pc-disabled) {
   transform: translateY(-4px);
-  box-shadow: 0 8px 18px rgba(0,0,0,0.55);
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22);
 }
 .mini-card.pc-selected {
-  border-color: #4ADE80;
-  background: #f0fdf4;
+  border-color: rgb(var(--st-primary-rgb));
+  background: #eff6ff;
   transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(74,222,128,0.35);
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.3);
 }
 .mini-card.pc-disabled {
   opacity: 0.22;
@@ -927,8 +927,8 @@ async function saveRound() {
   position: relative;
   width: 130px;
   border-radius: 10px;
-  background: linear-gradient(135deg, #1c1200, #2e1e00, #1a1008);
-  border: 2px solid #92400e;
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe, #e0f2fe);
+  border: 2px solid #1D4ED8;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -936,17 +936,17 @@ async function saveRound() {
   justify-content: center;
   gap: 4px;
   padding: 12px 0 10px;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.5), 0 0 0 1px rgba(252,211,77,0.15);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.22), 0 0 0 1px rgba(29,78,216,0.16);
   transition: transform 0.13s, box-shadow 0.13s, border-color 0.13s;
   user-select: none;
 }
 .joker-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 10px 28px rgba(252,211,77,0.22);
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.3);
 }
 .joker-card.pc-selected {
-  border-color: #FCD34D;
-  box-shadow: 0 6px 24px rgba(252,211,77,0.45);
+  border-color: #0EA5E9;
+  box-shadow: 0 6px 24px rgba(14,165,233,0.34);
   transform: translateY(-5px);
 }
 .joker-card.pc-disabled {
@@ -954,11 +954,11 @@ async function saveRound() {
   cursor: not-allowed;
   pointer-events: none;
 }
-.joker-star  { font-size: 22px; color: #FCD34D; line-height: 1; }
+.joker-star  { font-size: 22px; color: #1D4ED8; line-height: 1; }
 .joker-emoji { font-size: 30px; line-height: 1; }
 .joker-name  {
   font-size: 10px; font-weight: 800; letter-spacing: 2.5px;
-  color: #FCD34D; text-align: center;
+  color: #1D4ED8; text-align: center;
 }
 .pc-check {
   position: absolute; top: 3px; right: 3px;
