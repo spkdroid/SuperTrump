@@ -32,6 +32,7 @@ export const authAPI = {
 export const playersAPI = {
   getAll:  ()        => api.get('/players'),
   get:     (id)      => api.get(`/players/${id}`),
+  analytics: (id)    => api.get(`/players/${id}/analytics`),
   create:  (data)    => api.post('/players', data),
   update:  (id,data) => api.put(`/players/${id}`, data),
   remove:  (id)      => api.delete(`/players/${id}`),

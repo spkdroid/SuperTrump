@@ -272,6 +272,73 @@
           </v-col>
         </v-row>
 
+        <!-- ── Replay Timeline ─────────────────────────────── -->
+        <v-row class="mb-4" v-if="replayTimeline.length">
+          <v-col cols="12">
+            <v-card color="surface" rounded="xl" elevation="0" class="st-panel st-panel-fill">
+              <v-card-title class="pa-5 pb-3 d-flex align-center">
+                <v-icon color="primary" class="mr-2">mdi-playlist-play</v-icon>
+                Replay Timeline
+                <v-chip size="x-small" color="primary" variant="tonal" label class="ml-2">
+                  Round-by-round
+                </v-chip>
+              </v-card-title>
+              <v-card-text class="pt-0">
+                <div class="replay-timeline">
+                  <div
+                    v-for="item in replayTimeline"
+                    :key="item.round_id"
+                    class="replay-item"
+                  >
+                    <div class="replay-rail">
+                      <div class="replay-dot" :class="item.bid_won ? 'replay-win' : 'replay-loss'">
+                        {{ item.round_number }}
+                      </div>
+                      <div class="replay-line" />
+                    </div>
+                    <div class="replay-body">
+                      <div class="d-flex align-center flex-wrap gap-2 mb-2">
+                        <v-chip size="x-small" color="primary" variant="tonal" label>
+                          Round {{ item.round_number }}
+                        </v-chip>
+                        <v-chip size="x-small" :color="item.bid_won ? 'success' : 'error'" label>
+                          {{ item.bid_won ? 'Won' : 'Lost' }}
+                        </v-chip>
+                        <v-chip size="x-small" color="surface-variant" label>
+                          {{ BID_TYPE_LABELS[item.bid_type] || item.bid_type }}
+                        </v-chip>
+                      </div>
+                      <div class="text-body-2 font-weight-medium mb-1">
+                        {{ item.bidder_name }} bid {{ item.bid_amount }} with
+                        {{ item.points_won_by_bidding_team }}/{{ item.bid_amount }} points.
+                      </div>
+                      <div class="text-caption text-medium-emphasis mb-3">
+                        Trump {{ suitLabel(item.trump_suit) }} · Bidder score
+                        <span :class="item.bidder_score >= 0 ? 'text-success' : 'text-error'">
+                          {{ signed(item.bidder_score) }}
+                        </span>
+                        <span v-if="item.leading_player"> · Leader: {{ item.leading_player.name }}</span>
+                      </div>
+                      <div class="d-flex flex-wrap gap-2">
+                        <v-chip
+                          v-for="participant in item.participants"
+                          :key="`${item.round_id}-${participant.player_id}`"
+                          size="small"
+                          :color="participant.role === 'bidder' ? 'primary' : participant.team === 'bidding' ? 'success' : 'grey'"
+                          variant="tonal"
+                          label
+                        >
+                          {{ participant.player_name }} {{ signed(participant.score) }}
+                        </v-chip>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+
         <RoundHistory :rounds="rounds" :can-manage="canManageGame" @delete="onRoundDeleted" />
       </template>
     </div>
@@ -444,7 +511,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { gamesAPI } from '@/api'
 import { useAppStore } from '@/store'
-import { buildChartSeries } from '@/utils/scoring'
+import { BID_TYPE_LABELS, SUIT_META, buildChartSeries } from '@/utils/scoring'
 import { playWinnerSound } from '@/utils/sound'
 import RoundEntry   from '@/components/RoundEntry.vue'
 import RoundHistory from '@/components/RoundHistory.vue'
@@ -466,6 +533,7 @@ const winnerDialog    = ref(false)
 function initials(n = '') { return n.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() }
 function shortName(n = '') { return n.split(' ')[0] }
 function fmtDate(d)       { return new Date(d).toLocaleDateString() }
+function suitLabel(suit) { return SUIT_META[suit]?.label || '—' }
 
 // Deterministic confetti styles — stable across renders
 const confettiStyles = Array.from({ length: 65 }, (_, i) => ({
@@ -566,6 +634,47 @@ const playerMomentumMap = computed(() => {
 const momentumScale = computed(() => {
   const values = Object.values(playerMomentumMap.value).map(value => Math.abs(value))
   return Math.max(1, ...values)
+})
+
+const replayTimeline = computed(() => {
+  if (!rounds.value.length) return []
+
+  const totals = new Map()
+  for (const entry of leaderboard.value) {
+    totals.set(entry.player_id, 0)
+  }
+
+  return rounds.value.map((round) => {
+    const participants = Array.isArray(round.participants) ? round.participants : []
+
+    for (const participant of participants) {
+      const current = totals.get(participant.player_id) || 0
+      totals.set(participant.player_id, current + scoreNumber(participant.score))
+    }
+
+    const snapshot = leaderboard.value
+      .map((entry) => ({
+        id: entry.player_id,
+        name: entry.player_name,
+        score: totals.get(entry.player_id) || 0,
+      }))
+      .sort((a, b) => b.score - a.score)
+
+    return {
+      round_id: round.id,
+      round_number: round.round_number,
+      bidder_name: round.bidder_name,
+      bid_amount: round.bid_amount,
+      bid_type: round.bid_type,
+      bid_won: round.bid_won,
+      trump_suit: round.trump_suit,
+      bidder_score: round.bidder_score,
+      points_won_by_bidding_team: round.points_won_by_bidding_team,
+      participants,
+      leading_player: snapshot[0] || null,
+      top_snapshot: snapshot.slice(0, 3),
+    }
+  })
 })
 
 const gameInsights = computed(() => {
@@ -949,6 +1058,67 @@ onMounted(fetchAll)
   font-size: 0.74rem;
   line-height: 1.35;
   color: var(--st-text-muted);
+}
+
+.replay-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.replay-item {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.replay-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100%;
+}
+
+.replay-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.16);
+}
+
+.replay-win {
+  background: linear-gradient(135deg, rgb(var(--st-primary-rgb)), #22c55e);
+}
+
+.replay-loss {
+  background: linear-gradient(135deg, #ef4444, #f97316);
+}
+
+.replay-line {
+  width: 2px;
+  flex: 1;
+  min-height: 36px;
+  margin-top: 8px;
+  background: linear-gradient(180deg, rgba(var(--st-primary-rgb), 0.35), rgba(var(--st-primary-rgb), 0.08));
+}
+
+.replay-item:last-child .replay-line {
+  background: transparent;
+}
+
+.replay-body {
+  min-width: 0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(var(--st-primary-rgb), 0.04);
+  border: 1px solid rgba(var(--st-primary-rgb), 0.12);
 }
 
 .winner-overlay {

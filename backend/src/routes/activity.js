@@ -149,6 +149,76 @@ function buildPlayerPerformanceEvent(row, rank) {
   };
 }
 
+const MILESTONE_RULES = [
+  {
+    key: 'score',
+    field: 'total_score',
+    thresholds: [100, 250, 500, 1000],
+    icon: 'mdi-trophy-award',
+    color: 'secondary',
+    title: (row, threshold) => `${row.player_name} reached ${threshold} total points`,
+    subtitle: (row, threshold) => `Lifetime score ${signed(row.total_score)} · ${row.games_won} wins`,
+    route: '/leaderboard',
+  },
+  {
+    key: 'games',
+    field: 'games_played',
+    thresholds: [3, 10, 25],
+    icon: 'mdi-cards-playing-outline',
+    color: 'primary',
+    title: (row, threshold) => `${row.player_name} played ${threshold} games`,
+    subtitle: (row) => `${row.games_won} wins · ${signed(row.total_score)} score`,
+    route: '/players',
+  },
+  {
+    key: 'wins',
+    field: 'games_won',
+    thresholds: [1, 5, 10],
+    icon: 'mdi-medal-outline',
+    color: 'success',
+    title: (row, threshold) => `${row.player_name} won ${threshold} games`,
+    subtitle: (row) => `${row.games_played} games played · ${signed(row.total_score)} score`,
+    route: '/leaderboard',
+  },
+  {
+    key: 'bids',
+    field: 'rounds_as_bidder',
+    thresholds: [5, 15, 30],
+    icon: 'mdi-gavel',
+    color: 'warning',
+    title: (row, threshold) => `${row.player_name} has bid ${threshold} times`,
+    subtitle: (row) => `${toPct(row.bid_win_rate)}% bid success · ${signed(row.total_score)} score`,
+    route: '/leaderboard',
+  },
+];
+
+function buildMilestoneEvents(row) {
+  const events = [];
+
+  for (const rule of MILESTONE_RULES) {
+    const value = toNumber(row[rule.field], 0);
+    const reached = rule.thresholds.filter((threshold) => value >= threshold);
+    const threshold = reached.at(-1);
+    if (!threshold) continue;
+
+    events.push({
+      id: `milestone-${rule.key}-${row.player_id}-${threshold}`,
+      type: 'milestone',
+      milestone_key: `${rule.key}:${threshold}`,
+      icon: rule.icon,
+      color: rule.color,
+      title: rule.title(row, threshold),
+      subtitle: rule.subtitle(row, threshold),
+      occurred_at: toIso(row.occurred_at),
+      route: rule.route,
+      player_name: row.player_name,
+      player_color: row.player_color,
+    });
+  }
+
+  return events;
+}
+
 // GET /api/activity?limit=25
 // Activity feed derived from game events, round outcomes, and player performance.
 router.get('/', requireUser, async (req, res, next) => {
@@ -238,6 +308,7 @@ router.get('/', requireUser, async (req, res, next) => {
 
     playerRes.rows.forEach((row, idx) => {
       events.push(buildPlayerPerformanceEvent(row, idx + 1));
+      events.push(...buildMilestoneEvents(row));
     });
 
     const sorted = events

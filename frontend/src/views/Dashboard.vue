@@ -193,12 +193,43 @@
                 <v-btn-toggle v-model="activityFilter" density="compact" rounded="lg" color="primary">
                   <v-btn value="all" size="small">All</v-btn>
                   <v-btn value="highlights" size="small">Highlights</v-btn>
+                  <v-btn value="milestones" size="small">Milestones</v-btn>
                   <v-btn value="mine" size="small">My Activity</v-btn>
                 </v-btn-toggle>
                 <div class="text-caption text-medium-emphasis">
                   Updated {{ lastActivityRefresh ? relativeTime(lastActivityRefresh) : 'just now' }}
                 </div>
               </div>
+
+              <v-card
+                v-if="milestoneEvents.length"
+                color="surface-variant"
+                rounded="lg"
+                elevation="0"
+                class="pa-4 mb-4 milestone-strip"
+              >
+                <div class="d-flex align-center flex-wrap gap-2 mb-2">
+                  <v-icon color="warning" size="18">mdi-bell-badge-outline</v-icon>
+                  <div class="font-weight-bold">Milestone Alerts</div>
+                  <v-chip size="x-small" color="warning" variant="tonal" label>
+                    {{ milestoneEvents.length }}
+                  </v-chip>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                  <v-chip
+                    v-for="event in milestoneEvents.slice(0, 4)"
+                    :key="event.id"
+                    :color="event.color || 'warning'"
+                    size="small"
+                    label
+                    variant="tonal"
+                    @click="openActivity(event)"
+                  >
+                    <v-icon start size="14">{{ event.icon }}</v-icon>
+                    {{ event.title }}
+                  </v-chip>
+                </div>
+              </v-card>
 
               <div v-if="activityLoading" class="pa-6 text-center">
                 <v-progress-circular indeterminate color="primary" />
@@ -300,6 +331,8 @@ const activityLoading = ref(false)
 const activityEvents = ref([])
 const activityFilter = ref('all')
 const lastActivityRefresh = ref(null)
+let activityPrimed = false
+const seenMilestoneIds = new Set()
 
 const activeGames = computed(() => allGames.value.filter(g => g.status === 'active').slice(0, 5))
 
@@ -311,6 +344,10 @@ const filteredActivityEvents = computed(() => {
       return ['high_bid_won', 'high_bid_lost', 'game_completed', 'player_hot_streak'].includes(event.type)
     }
 
+    if (activityFilter.value === 'milestones') {
+      return event.type === 'milestone'
+    }
+
     if (activityFilter.value === 'mine') {
       if (!username) return false
       return String(event.player_name || '').toLowerCase() === String(username).toLowerCase()
@@ -319,6 +356,10 @@ const filteredActivityEvents = computed(() => {
     return true
   }).slice(0, 20)
 })
+
+const milestoneEvents = computed(() =>
+  activityEvents.value.filter((event) => event.type === 'milestone').slice(0, 6)
+)
 
 const statCards = computed(() => [
   {
@@ -358,6 +399,7 @@ function toneLabel(type) {
     game_started: 'New Game',
     player_hot_streak: 'Streak',
     player_performance: 'Player',
+    milestone: 'Milestone',
     round_recorded: 'Round',
   }
   return labels[type] || 'Update'
@@ -384,6 +426,21 @@ async function fetchActivity() {
     const res = await activityAPI.list({ limit: 30 })
     activityEvents.value = res.data.events || []
     lastActivityRefresh.value = new Date().toISOString()
+
+    const newMilestones = activityEvents.value.filter((event) => event.type === 'milestone')
+    if (activityPrimed) {
+      for (const event of newMilestones) {
+        if (!seenMilestoneIds.has(event.id)) {
+          store.notify(event.title, 'info')
+          seenMilestoneIds.add(event.id)
+        }
+      }
+    } else {
+      for (const event of newMilestones) {
+        seenMilestoneIds.add(event.id)
+      }
+      activityPrimed = true
+    }
   } finally {
     activityLoading.value = false
   }
@@ -474,5 +531,9 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.milestone-strip {
+  border: 1px solid rgba(var(--st-primary-rgb), 0.12);
 }
 </style>
