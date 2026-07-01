@@ -297,16 +297,25 @@
                       <div class="replay-line" />
                     </div>
                     <div class="replay-body">
-                      <div class="d-flex align-center flex-wrap gap-2 mb-2">
-                        <v-chip size="x-small" color="primary" variant="tonal" label>
-                          Round {{ item.round_number }}
-                        </v-chip>
-                        <v-chip size="x-small" :color="item.bid_won ? 'success' : 'error'" label>
-                          {{ item.bid_won ? 'Won' : 'Lost' }}
-                        </v-chip>
-                        <v-chip size="x-small" color="surface-variant" label>
-                          {{ BID_TYPE_LABELS[item.bid_type] || item.bid_type }}
-                        </v-chip>
+                      <div class="d-flex align-center gap-2 mb-2">
+                        <div class="d-flex align-center flex-wrap gap-2 flex-grow-1">
+                          <v-chip size="x-small" color="primary" variant="tonal" label>
+                            Round {{ item.round_number }}
+                          </v-chip>
+                          <v-chip size="x-small" :color="item.bid_won ? 'success' : 'error'" label>
+                            {{ item.bid_won ? 'Won' : 'Lost' }}
+                          </v-chip>
+                          <v-chip size="x-small" color="surface-variant" label>
+                            {{ BID_TYPE_LABELS[item.bid_type] || item.bid_type }}
+                          </v-chip>
+                        </div>
+                        <v-btn
+                          icon="mdi-play-circle"
+                          size="small"
+                          variant="text"
+                          color="primary"
+                          @click.stop="openReplay(item)"
+                        />
                       </div>
                       <div class="text-body-2 font-weight-medium mb-1">
                         {{ item.bidder_name }} bid {{ item.bid_amount }} with
@@ -351,6 +360,127 @@
       :last-round="lastRoundMode"
       @saved="onRoundSaved"
     />
+
+    <v-dialog v-model="replayDialog" max-width="980" scrollable persistent>
+      <v-card color="surface" rounded="xl" class="replay-dialog-card">
+        <v-card-title class="pa-5 pb-3 d-flex align-center">
+          <v-icon color="primary" class="mr-2">mdi-play-circle-outline</v-icon>
+          Round Replay
+          <v-chip v-if="replayRound" size="x-small" color="primary" variant="tonal" label class="ml-2">
+            Round {{ replayRound.round_number }}
+          </v-chip>
+          <v-spacer />
+          <v-btn icon="mdi-close" variant="text" @click="closeReplay" />
+        </v-card-title>
+        <v-divider />
+        <v-card-text class="pa-5">
+          <div v-if="replayRound" class="replay-dialog-stage">
+            <div class="replay-stage-header mb-4">
+              <div class="text-caption font-weight-bold text-primary mb-1">
+                {{ replayStageLabel }}
+              </div>
+              <div class="text-h6 font-weight-black">{{ replayStageTitle }}</div>
+              <div class="text-body-2 text-medium-emphasis mt-1">
+                {{ replayStageSubtitle }}
+              </div>
+            </div>
+
+            <v-progress-linear
+              :model-value="replayStageProgress"
+              color="primary"
+              rounded
+              height="8"
+              class="mb-5"
+            />
+
+            <div class="replay-scene" :class="`scene-${replayStage}`">
+              <transition name="replay-fade-slide" mode="out-in">
+                <div v-if="replayStage === 0" key="bet" class="replay-step-card replay-bet-card">
+                  <div class="replay-step-badge">1</div>
+                  <div class="text-caption text-medium-emphasis">BET PLACED</div>
+                  <div class="replay-main-player">{{ replayRound.bidder_name }}</div>
+                  <div class="replay-score-pill">
+                    Bid {{ replayRound.bid_amount }} · {{ BID_TYPE_LABELS[replayRound.bid_type] || replayRound.bid_type }}
+                  </div>
+                  <div class="replay-detail mt-3">
+                    Trump {{ suitLabel(replayRound.trump_suit) }} and declared the table at
+                    {{ replayRound.points_won_by_bidding_team }}/{{ replayRound.bid_amount }} points.
+                  </div>
+                </div>
+
+                <div v-else-if="replayStage === 1" key="cards" class="replay-step-card replay-cards-card">
+                  <div class="replay-step-badge">2</div>
+                  <div class="text-caption text-medium-emphasis">CARDS PICKED</div>
+                  <div class="replay-main-player">Asked partner cards</div>
+                  <div class="replay-card-stack">
+                    <v-chip
+                      v-for="(card, index) in replayCards"
+                      :key="card"
+                      class="replay-card-chip"
+                      :style="{ '--delay': `${index * 90}ms` }"
+                      color="surface"
+                      variant="tonal"
+                      label
+                    >
+                      {{ card }}
+                    </v-chip>
+                  </div>
+                  <div class="replay-detail mt-3">
+                    {{ replayRound.partner_cards_asked || 'No partner cards were recorded for this round.' }}
+                  </div>
+                </div>
+
+                <div v-else key="winner" class="replay-step-card replay-winner-card">
+                  <div class="replay-step-badge">3</div>
+                  <div class="text-caption text-medium-emphasis">WINNERS ANNOUNCED</div>
+                  <div class="replay-winner-hero">
+                    <v-avatar
+                      v-for="player in replayWinnerPlayers"
+                      :key="player.player_id"
+                      :color="player.color"
+                      size="54"
+                      rounded="xl"
+                      class="replay-winner-avatar"
+                    >
+                      <span class="st-avatar-initial-md">{{ initials(player.name) }}</span>
+                    </v-avatar>
+                  </div>
+                  <div class="replay-main-player">
+                    {{ replayRound.bid_won ? `${replayRound.bidder_name} won the bet` : `${replayRound.bidder_name} missed the bet` }}
+                  </div>
+                  <div class="replay-detail">
+                    <span v-if="replayRound.leading_player">
+                      Final leader: {{ replayRound.leading_player.name }} with {{ signed(replayRound.leading_player.score) }}
+                    </span>
+                    <span v-else>Final scores are ready.</span>
+                  </div>
+                  <div class="replay-winner-list mt-4">
+                    <v-chip
+                      v-for="participant in replayRound.participants"
+                      :key="`${replayRound.round_id}-${participant.player_id}`"
+                      size="small"
+                      :color="participant.role === 'bidder' ? 'primary' : participant.team === 'bidding' ? 'success' : 'grey'"
+                      variant="tonal"
+                      label
+                    >
+                      {{ participant.player_name }} {{ signed(participant.score) }}
+                    </v-chip>
+                  </div>
+                </div>
+              </transition>
+            </div>
+
+            <div class="replay-footer mt-5">
+              <div class="text-caption text-medium-emphasis">
+                {{ replayRound.bid_won ? 'Bidding team completed the round.' : 'Opposing team held the line.' }}
+              </div>
+              <v-spacer />
+              <v-btn variant="text" color="primary" @click="closeReplay">Close</v-btn>
+            </div>
+          </div>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
 
     <!-- End Game Confirm -->
     <v-dialog v-model="completeDialog" max-width="380">
@@ -507,7 +637,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { gamesAPI } from '@/api'
 import { useAppStore } from '@/store'
@@ -529,11 +659,59 @@ const roundDialog     = ref(false)
 const completeDialog  = ref(false)
 const lastRoundMode   = ref(false)
 const winnerDialog    = ref(false)
+const replayDialog    = ref(false)
+const replayRound     = ref(null)
+const replayStage     = ref(0)
+const replayTimers    = []
 
 function initials(n = '') { return n.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() }
 function shortName(n = '') { return n.split(' ')[0] }
 function fmtDate(d)       { return new Date(d).toLocaleDateString() }
 function suitLabel(suit) { return SUIT_META[suit]?.label || '—' }
+
+const replayCards = computed(() => {
+  const raw = String(replayRound.value?.partner_cards_asked || '').trim()
+  if (!raw) return ['No cards recorded']
+  return raw.split(',').map(card => card.trim()).filter(Boolean)
+})
+
+const replayStageLabel = computed(() => {
+  if (replayStage.value === 0) return 'BETTING PHASE'
+  if (replayStage.value === 1) return 'CARD PICK PHASE'
+  return 'RESULT PHASE'
+})
+
+const replayStageTitle = computed(() => {
+  if (!replayRound.value) return 'Round Replay'
+  if (replayStage.value === 0) return `${replayRound.value.bidder_name} places the bet`
+  if (replayStage.value === 1) return 'Selected cards are revealed'
+  return 'Winners are announced'
+})
+
+const replayStageSubtitle = computed(() => {
+  if (!replayRound.value) return ''
+  if (replayStage.value === 0) return `Round ${replayRound.value.round_number} starts with a ${replayRound.value.bid_amount} bid.`
+  if (replayStage.value === 1) return replayRound.value.partner_cards_asked
+    ? `The table asked for ${replayRound.value.partner_cards_asked}.`
+    : 'No partner cards were recorded for this round.'
+  return replayRound.value.bid_won
+    ? `${replayRound.value.bidder_name} and the bidding side take the round.`
+    : `The opposing side stops ${replayRound.value.bidder_name}.`
+})
+
+const replayStageProgress = computed(() => ((replayStage.value + 1) / 3) * 100)
+
+const replayWinnerPlayers = computed(() => {
+  const participants = Array.isArray(replayRound.value?.participants) ? replayRound.value.participants : []
+  const winningTeam = replayRound.value?.bid_won ? 'bidding' : 'opposing'
+  return participants
+    .filter((participant) => participant.team === winningTeam)
+    .map((participant) => ({
+      player_id: participant.player_id,
+      name: participant.player_name,
+      color: participant.role === 'bidder' ? 'primary' : 'success',
+    }))
+})
 
 // Deterministic confetti styles — stable across renders
 const confettiStyles = Array.from({ length: 65 }, (_, i) => ({
@@ -861,6 +1039,34 @@ function momentumProgress(entry) {
   return Math.max(8, Math.round((value / momentumScale.value) * 100))
 }
 
+function clearReplayTimers() {
+  while (replayTimers.length) {
+    clearTimeout(replayTimers.pop())
+  }
+}
+
+function closeReplay() {
+  clearReplayTimers()
+  replayDialog.value = false
+  replayRound.value = null
+  replayStage.value = 0
+}
+
+function openReplay(item) {
+  clearReplayTimers()
+  replayRound.value = item
+  replayStage.value = 0
+  replayDialog.value = true
+
+  replayTimers.push(setTimeout(() => {
+    if (replayDialog.value) replayStage.value = 1
+  }, 1100))
+
+  replayTimers.push(setTimeout(() => {
+    if (replayDialog.value) replayStage.value = 2
+  }, 2400))
+}
+
 async function fetchAll() {
   loading.value = true
   try {
@@ -910,7 +1116,14 @@ watch(winnerDialog, visible => {
   if (visible) playWinnerSound()
 })
 
+watch(replayDialog, (visible) => {
+  if (!visible) clearReplayTimers()
+})
+
 onMounted(fetchAll)
+onBeforeUnmount(() => {
+  clearReplayTimers()
+})
 </script>
 
 <style scoped>
@@ -1119,6 +1332,142 @@ onMounted(fetchAll)
   border-radius: 16px;
   background: rgba(var(--st-primary-rgb), 0.04);
   border: 1px solid rgba(var(--st-primary-rgb), 0.12);
+}
+
+.replay-dialog-card {
+  overflow: hidden;
+}
+
+.replay-dialog-stage {
+  min-height: 440px;
+}
+
+.replay-stage-header {
+  max-width: 720px;
+}
+
+.replay-scene {
+  position: relative;
+  min-height: 300px;
+  border-radius: 24px;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(var(--st-primary-rgb), 0.14), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(var(--st-secondary-rgb), 0.12), transparent 28%),
+    rgba(var(--st-primary-rgb), 0.03);
+  border: 1px solid rgba(var(--st-primary-rgb), 0.10);
+  overflow: hidden;
+}
+
+.replay-step-card {
+  max-width: 100%;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+}
+
+.replay-step-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(135deg, rgb(var(--st-primary-rgb)), #38bdf8);
+  box-shadow: 0 10px 24px rgba(var(--st-primary-rgb), 0.22);
+}
+
+.replay-main-player {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.replay-score-pill {
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(var(--st-primary-rgb), 0.10);
+  color: rgb(var(--v-theme-primary));
+  font-weight: 800;
+}
+
+.replay-detail {
+  max-width: 560px;
+  color: var(--st-text-muted);
+  line-height: 1.45;
+}
+
+.replay-card-stack {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.replay-card-chip {
+  transform: translateY(14px) scale(0.9);
+  opacity: 0;
+  animation: replay-card-pop 0.45s ease forwards;
+  animation-delay: var(--delay);
+}
+
+@keyframes replay-card-pop {
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.replay-winner-hero {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.replay-winner-avatar {
+  animation: replay-winner-pop 0.55s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+
+.replay-winner-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.replay-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.replay-fade-slide-enter-active,
+.replay-fade-slide-leave-active {
+  transition: all 0.28s ease;
+}
+
+.replay-fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+.replay-fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+@keyframes replay-winner-pop {
+  0% { transform: scale(0.85); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .winner-overlay {
