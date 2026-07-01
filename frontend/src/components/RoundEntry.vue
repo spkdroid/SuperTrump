@@ -440,6 +440,39 @@
                 />
               </div>
 
+              <div class="round-intel-panel mb-4">
+                <div class="round-intel-head">
+                  <div class="d-flex align-center gap-2">
+                    <v-icon color="primary" size="18">mdi-radar</v-icon>
+                    <span class="round-intel-title">Round Intel</span>
+                  </div>
+                  <v-chip :color="bidPressureColor" size="x-small" label>
+                    {{ bidPressureLabel }}
+                  </v-chip>
+                </div>
+                <v-progress-linear
+                  :model-value="bidPressurePercent"
+                  :color="bidPressureColor"
+                  height="8"
+                  rounded
+                  bg-color="surface"
+                  class="mb-3"
+                />
+                <div class="round-intel-grid">
+                  <div
+                    v-for="card in roundIntelCards"
+                    :key="card.key"
+                    class="round-intel-card"
+                  >
+                    <v-icon :color="card.color" size="17">{{ card.icon }}</v-icon>
+                    <div>
+                      <div class="round-intel-label">{{ card.label }}</div>
+                      <div class="round-intel-value">{{ card.value }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <!-- Win/Loss indicator -->
               <v-alert
                 :color="bidWon ? 'success' : 'error'"
@@ -473,6 +506,31 @@
           <v-stepper-window-item :value="4">
             <div class="pa-5">
               <div class="text-subtitle-2 text-medium-emphasis mb-4">Score Breakdown</div>
+
+              <div class="round-intel-panel compact mb-4">
+                <div class="round-intel-head">
+                  <div class="d-flex align-center gap-2">
+                    <v-icon color="primary" size="18">mdi-scoreboard-outline</v-icon>
+                    <span class="round-intel-title">Impact Preview</span>
+                  </div>
+                  <v-chip :color="bidWon ? 'success' : 'error'" size="x-small" label>
+                    {{ bidWon ? 'Bid made' : 'Bid missed' }}
+                  </v-chip>
+                </div>
+                <div class="round-intel-grid">
+                  <div
+                    v-for="card in roundIntelCards"
+                    :key="`confirm-${card.key}`"
+                    class="round-intel-card"
+                  >
+                    <v-icon :color="card.color" size="17">{{ card.icon }}</v-icon>
+                    <div>
+                      <div class="round-intel-label">{{ card.label }}</div>
+                      <div class="round-intel-value">{{ card.value }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
               <!-- Last Round 2× notice -->
               <v-alert
@@ -726,6 +784,56 @@ const preview = computed(() =>
     : null
 )
 
+const pointMargin = computed(() => scoreNumber(form.value.pointsWon) - scoreNumber(form.value.bidAmount))
+
+const bidPressurePercent = computed(() => {
+  const bidAmount = Math.max(1, scoreNumber(form.value.bidAmount))
+  return Math.min(100, Math.round((scoreNumber(form.value.pointsWon) / bidAmount) * 100))
+})
+
+const bidPressureColor = computed(() => {
+  if (bidWon.value) return 'success'
+  if (scoreNumber(form.value.bidAmount) - scoreNumber(form.value.pointsWon) <= 6) return 'warning'
+  return 'error'
+})
+
+const bidPressureLabel = computed(() => {
+  if (bidWon.value) return `${signed(pointMargin.value)} over bid`
+  const needed = Math.max(0, scoreNumber(form.value.bidAmount) - scoreNumber(form.value.pointsWon))
+  return `${needed} needed`
+})
+
+const roundIntelCards = computed(() => [
+  {
+    key: 'needed',
+    label: bidWon.value ? 'Over Bid' : 'Needed',
+    value: bidWon.value ? signed(pointMargin.value) : Math.max(0, -pointMargin.value),
+    icon: bidWon.value ? 'mdi-check-decagram' : 'mdi-flag-outline',
+    color: bidPressureColor.value,
+  },
+  {
+    key: 'margin',
+    label: 'Margin',
+    value: signed(pointMargin.value),
+    icon: pointMargin.value >= 0 ? 'mdi-trending-up' : 'mdi-trending-down',
+    color: pointMargin.value >= 0 ? 'success' : 'error',
+  },
+  {
+    key: 'bidder-impact',
+    label: 'Bidder',
+    value: signed(preview.value?.bidderScore ?? 0),
+    icon: 'mdi-crown-outline',
+    color: (preview.value?.bidderScore ?? 0) >= 0 ? 'success' : 'error',
+  },
+  {
+    key: 'team-size',
+    label: 'Team',
+    value: `${form.value.partnerIds.length + 1} player${form.value.partnerIds.length ? 's' : ''}`,
+    icon: 'mdi-account-group-outline',
+    color: 'info',
+  },
+])
+
 // ── Partner card picker data ───────────────────────────────────────────
 const PARTNER_SUITS = [
   { key: 'S', icon: '♠', color: '#1a1a1a', name: 'Spades'   },
@@ -779,6 +887,11 @@ const suitOptions = [
   { value: 'no_trump', icon: '🚫', label: 'No Trump', color: 'grey',          textColor: '#9CA3AF' },
 ]
 
+function scoreNumber(value) { return Number(value) || 0 }
+function signed(value) {
+  const amount = scoreNumber(value)
+  return `${amount >= 0 ? '+' : ''}${amount}`
+}
 function initials(n = '') { return n.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() }
 function shortName(n = '') { return n.split(' ')[0] }
 function playerById(id)   { return players.value.find(p => p.id === id) }
@@ -842,6 +955,73 @@ async function saveRound() {
   background: rgba(var(--st-primary-rgb), 0.08) !important;
   color: rgba(var(--v-theme-on-surface), 0.62) !important;
   font-size: 11px;
+}
+
+.round-intel-panel {
+  border: 1px solid var(--st-panel-border);
+  background:
+    linear-gradient(135deg, rgba(var(--st-primary-rgb), 0.08), rgba(49, 162, 76, 0.08)),
+    #ffffff;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.round-intel-panel.compact {
+  background: rgba(var(--st-primary-rgb), 0.05);
+}
+
+.round-intel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.round-intel-title {
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.round-intel-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.round-intel-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 9px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(var(--st-primary-rgb), 0.12);
+}
+
+.round-intel-label {
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--st-text-muted);
+}
+
+.round-intel-value {
+  margin-top: 1px;
+  font-size: 0.86rem;
+  line-height: 1.2;
+  font-weight: 900;
+  color: rgb(var(--v-theme-on-surface));
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .round-intel-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* ─────────── Card picker ───────────────────────────────────── */

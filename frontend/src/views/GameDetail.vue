@@ -78,6 +78,33 @@
           You can view this game, but only the owner or admin can add rounds, undo rounds, or end it.
         </v-alert>
 
+        <v-row v-if="gameInsights.length" class="mb-4 game-insight-grid">
+          <v-col
+            v-for="insight in gameInsights"
+            :key="insight.key"
+            cols="12"
+            sm="6"
+            lg="3"
+          >
+            <v-card
+              color="surface"
+              rounded="xl"
+              elevation="0"
+              class="st-panel st-lift insight-card"
+              :class="`insight-${insight.tone}`"
+            >
+              <div class="insight-icon-wrap">
+                <v-icon :color="insight.color" size="22">{{ insight.icon }}</v-icon>
+              </div>
+              <div class="insight-body">
+                <div class="insight-label">{{ insight.label }}</div>
+                <div class="insight-value">{{ insight.value }}</div>
+                <div class="insight-detail">{{ insight.detail }}</div>
+              </div>
+            </v-card>
+          </v-col>
+        </v-row>
+
       <!-- ── Leaderboard + Chart ──────────────────────────── -->
       <v-row class="mb-4">
         <!-- Live Leaderboard -->
@@ -119,6 +146,14 @@
                     <span v-if="entry.times_bidder > 0">
                       ({{ Math.round(entry.bids_won / entry.times_bidder * 100) }}% won)
                     </span>
+                  </div>
+                  <div v-if="rounds.length" class="standings-microline">
+                    <v-icon size="13" :color="playerMomentum(entry.player_id).color">
+                      {{ playerMomentum(entry.player_id).icon }}
+                    </v-icon>
+                    <span>{{ playerMomentum(entry.player_id).label }}</span>
+                    <span v-if="idx > 0" class="micro-separator">|</span>
+                    <span v-if="idx > 0">{{ pointsBehind(entry) }} back</span>
                   </div>
                 </div>
 
@@ -167,6 +202,76 @@
       </v-row>
 
         <!-- ── Round History ───────────────────────────────── -->
+        <v-row v-if="rounds.length" class="mb-4">
+          <v-col cols="12" md="8">
+            <v-card color="surface" rounded="xl" elevation="0" class="st-panel st-panel-fill">
+              <v-card-title class="pa-5 pb-3 d-flex align-center">
+                <v-icon color="success" class="mr-2">mdi-chart-timeline-variant</v-icon>
+                Table Momentum
+                <v-chip size="x-small" color="success" variant="tonal" label class="ml-2">
+                  Last {{ momentumWindow }} rounds
+                </v-chip>
+              </v-card-title>
+              <v-card-text class="pt-0">
+                <div
+                  v-for="entry in leaderboard"
+                  :key="`momentum-${entry.player_id}`"
+                  class="momentum-row"
+                >
+                  <div class="d-flex align-center gap-2 momentum-head">
+                    <v-avatar :color="entry.avatar_color" size="26" rounded="lg">
+                      <span class="st-avatar-initial-xs">
+                        {{ initials(entry.player_name) }}
+                      </span>
+                    </v-avatar>
+                    <div class="momentum-name">{{ entry.player_name }}</div>
+                    <v-spacer />
+                    <v-chip
+                      :color="playerMomentum(entry.player_id).color"
+                      size="x-small"
+                      label
+                    >
+                      {{ signed(playerMomentum(entry.player_id).value) }}
+                    </v-chip>
+                  </div>
+                  <v-progress-linear
+                    :model-value="momentumProgress(entry)"
+                    :color="playerMomentum(entry.player_id).color"
+                    height="8"
+                    rounded
+                    bg-color="surface-variant"
+                  />
+                </div>
+              </v-card-text>
+            </v-card>
+          </v-col>
+
+          <v-col cols="12" md="4">
+            <v-card color="surface" rounded="xl" elevation="0" class="st-panel st-panel-fill">
+              <v-card-title class="pa-5 pb-3 d-flex align-center">
+                <v-icon color="warning" class="mr-2">mdi-medal-outline</v-icon>
+                Game Awards
+              </v-card-title>
+              <v-card-text class="pt-0">
+                <div
+                  v-for="award in gameAwards"
+                  :key="award.key"
+                  class="award-row"
+                >
+                  <v-avatar color="surface-variant" size="34" rounded="lg" class="award-icon">
+                    <v-icon :color="award.color" size="19">{{ award.icon }}</v-icon>
+                  </v-avatar>
+                  <div class="award-body">
+                    <div class="award-title">{{ award.title }}</div>
+                    <div class="award-player">{{ award.playerName }}</div>
+                    <div class="award-detail">{{ award.detail }}</div>
+                  </div>
+                </div>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+
         <RoundHistory :rounds="rounds" :can-manage="canManageGame" @delete="onRoundDeleted" />
       </template>
     </div>
@@ -235,6 +340,19 @@
             <div class="champion-badge">🥇 CHAMPION</div>
             <div class="winner-score-big">
               {{ leaderboard[0].current_score >= 0 ? '+' : '' }}{{ leaderboard[0].current_score }}
+            </div>
+            <div v-if="winnerAwards.length" class="winner-awards">
+              <v-chip
+                v-for="award in winnerAwards"
+                :key="`winner-${award.key}`"
+                :color="award.color"
+                size="small"
+                variant="tonal"
+                label
+                :prepend-icon="award.icon"
+              >
+                {{ award.title }}
+              </v-chip>
             </div>
           </div>
 
@@ -322,11 +440,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { gamesAPI } from '@/api'
 import { useAppStore } from '@/store'
 import { buildChartSeries } from '@/utils/scoring'
+import { playWinnerSound } from '@/utils/sound'
 import RoundEntry   from '@/components/RoundEntry.vue'
 import RoundHistory from '@/components/RoundHistory.vue'
 
@@ -382,6 +501,257 @@ const chartOptions = computed(() => ({
   tooltip: { theme: 'light' },
 }))
 
+const leader = computed(() => leaderboard.value[0] || null)
+const runnerUp = computed(() => leaderboard.value[1] || null)
+
+const bidStats = computed(() => {
+  const total = rounds.value.length
+  const won = rounds.value.filter(round => round.bid_won).length
+  return {
+    total,
+    won,
+    lost: total - won,
+    rate: total ? Math.round((won / total) * 100) : 0,
+  }
+})
+
+const averageBid = computed(() => {
+  if (!rounds.value.length) return 0
+  const total = rounds.value.reduce((sum, round) => sum + scoreNumber(round.bid_amount), 0)
+  return (total / rounds.value.length).toFixed(1)
+})
+
+const highestBidRound = computed(() =>
+  rounds.value.reduce((best, round) => {
+    if (!best || scoreNumber(round.bid_amount) >= scoreNumber(best.bid_amount)) return round
+    return best
+  }, null)
+)
+
+const biggestSwing = computed(() => {
+  let best = null
+  for (const round of rounds.value) {
+    const participants = Array.isArray(round.participants) ? round.participants : []
+    for (const participant of participants) {
+      const score = scoreNumber(participant.score)
+      if (Math.abs(score) > Math.abs(best?.score || 0)) {
+        best = {
+          playerName: participant.player_name,
+          score,
+          roundNumber: round.round_number,
+        }
+      }
+    }
+  }
+  return best
+})
+
+const recentRounds = computed(() => rounds.value.slice(-3))
+const momentumWindow = computed(() => Math.min(3, rounds.value.length))
+
+const playerMomentumMap = computed(() => {
+  const totals = {}
+  for (const entry of leaderboard.value) totals[entry.player_id] = 0
+
+  for (const round of recentRounds.value) {
+    const participants = Array.isArray(round.participants) ? round.participants : []
+    for (const participant of participants) {
+      totals[participant.player_id] = (totals[participant.player_id] || 0) + scoreNumber(participant.score)
+    }
+  }
+
+  return totals
+})
+
+const momentumScale = computed(() => {
+  const values = Object.values(playerMomentumMap.value).map(value => Math.abs(value))
+  return Math.max(1, ...values)
+})
+
+const gameInsights = computed(() => {
+  if (!game.value) return []
+
+  const margin = leader.value && runnerUp.value
+    ? scoreNumber(leader.value.current_score) - scoreNumber(runnerUp.value.current_score)
+    : 0
+  const highBid = highestBidRound.value
+  const swing = biggestSwing.value
+
+  return [
+    {
+      key: 'race',
+      label: 'Race Leader',
+      value: leader.value ? leader.value.player_name : 'Ready',
+      detail: rounds.value.length
+        ? margin === 0
+          ? `Tied at ${signed(scoreNumber(leader.value?.current_score))}`
+          : `${runnerUp.value?.player_name || 'Field'} is ${margin} back`
+        : 'Play the first round to start the chase',
+      icon: 'mdi-podium-gold',
+      color: 'secondary',
+      tone: 'race',
+    },
+    {
+      key: 'bid-health',
+      label: 'Bid Health',
+      value: bidStats.value.total ? `${bidStats.value.rate}%` : 'No bids',
+      detail: bidStats.value.total
+        ? `${bidStats.value.won} won, ${bidStats.value.lost} lost`
+        : 'Wins and losses appear here',
+      icon: 'mdi-target-variant',
+      color: bidStats.value.rate >= 50 ? 'success' : 'error',
+      tone: 'bid',
+    },
+    {
+      key: 'stakes',
+      label: 'Table Stakes',
+      value: rounds.value.length ? `Avg ${averageBid.value}` : 'Bid 28+',
+      detail: highBid
+        ? `High bid ${highBid.bid_amount} by ${highBid.bidder_name}`
+        : 'Bid range opens at 28',
+      icon: 'mdi-gavel',
+      color: 'warning',
+      tone: 'stakes',
+    },
+    {
+      key: 'swing',
+      label: 'Biggest Swing',
+      value: swing ? signed(swing.score) : 'Waiting',
+      detail: swing
+        ? `${swing.playerName}, round ${swing.roundNumber}`
+        : 'Largest score movement shows here',
+      icon: 'mdi-lightning-bolt',
+      color: swing && swing.score < 0 ? 'error' : 'info',
+      tone: 'swing',
+    },
+  ]
+})
+
+const gameAwards = computed(() => {
+  if (!rounds.value.length) return []
+
+  const awards = []
+  const highBid = highestBidRound.value
+  const swing = biggestSwing.value
+  const bestBidder = [...leaderboard.value]
+    .filter(entry => scoreNumber(entry.times_bidder) > 0)
+    .sort((a, b) => {
+      const aRate = scoreNumber(a.bids_won) / scoreNumber(a.times_bidder)
+      const bRate = scoreNumber(b.bids_won) / scoreNumber(b.times_bidder)
+      return bRate - aRate || scoreNumber(b.times_bidder) - scoreNumber(a.times_bidder)
+    })[0]
+  const momentumLeaderId = Object.entries(playerMomentumMap.value)
+    .sort((a, b) => b[1] - a[1])[0]?.[0]
+  const momentumLeader = leaderboard.value.find(entry => String(entry.player_id) === String(momentumLeaderId))
+
+  if (highBid) {
+    awards.push({
+      key: 'risk-taker',
+      title: 'Risk Taker',
+      playerName: highBid.bidder_name,
+      detail: `Pushed the table to bid ${highBid.bid_amount}`,
+      icon: 'mdi-fire',
+      color: 'warning',
+    })
+  }
+
+  if (bestBidder) {
+    awards.push({
+      key: 'sharp-bidder',
+      title: 'Sharp Bidder',
+      playerName: bestBidder.player_name,
+      detail: `${Math.round(scoreNumber(bestBidder.bids_won) / scoreNumber(bestBidder.times_bidder) * 100)}% bid win rate`,
+      icon: 'mdi-crosshairs-gps',
+      color: 'success',
+    })
+  }
+
+  if (momentumLeader && scoreNumber(playerMomentumMap.value[momentumLeader.player_id]) > 0) {
+    awards.push({
+      key: 'momentum-run',
+      title: 'Momentum Run',
+      playerName: momentumLeader.player_name,
+      detail: `${signed(playerMomentumMap.value[momentumLeader.player_id])} over the last ${momentumWindow.value} rounds`,
+      icon: 'mdi-trending-up',
+      color: 'success',
+    })
+  }
+
+  if (swing) {
+    awards.push({
+      key: 'table-shaker',
+      title: 'Table Shaker',
+      playerName: swing.playerName,
+      detail: `${signed(swing.score)} in round ${swing.roundNumber}`,
+      icon: 'mdi-lightning-bolt',
+      color: swing.score < 0 ? 'error' : 'info',
+    })
+  }
+
+  return awards.slice(0, 4)
+})
+
+const winnerAwards = computed(() => {
+  if (!leader.value) return []
+  const matched = gameAwards.value.filter(award => award.playerName === leader.value.player_name)
+  return matched.length
+    ? matched
+    : [{
+      key: 'table-champion',
+      title: 'Table Champion',
+      playerName: leader.value.player_name,
+      detail: 'Finished on top',
+      icon: 'mdi-crown',
+      color: 'secondary',
+    }]
+})
+
+function scoreNumber(value) {
+  return Number(value) || 0
+}
+
+function signed(value) {
+  const amount = scoreNumber(value)
+  return `${amount >= 0 ? '+' : ''}${amount}`
+}
+
+function pointsBehind(entry) {
+  if (!leader.value) return 0
+  return Math.max(0, scoreNumber(leader.value.current_score) - scoreNumber(entry.current_score))
+}
+
+function playerMomentum(playerId) {
+  const value = scoreNumber(playerMomentumMap.value[playerId])
+  if (value > 0) {
+    return {
+      value,
+      label: `${signed(value)} lately`,
+      icon: 'mdi-trending-up',
+      color: 'success',
+    }
+  }
+  if (value < 0) {
+    return {
+      value,
+      label: `${signed(value)} lately`,
+      icon: 'mdi-trending-down',
+      color: 'error',
+    }
+  }
+  return {
+    value,
+    label: 'steady lately',
+    icon: 'mdi-minus',
+    color: 'grey',
+  }
+}
+
+function momentumProgress(entry) {
+  const value = Math.abs(scoreNumber(playerMomentumMap.value[entry.player_id]))
+  if (!value) return 2
+  return Math.max(8, Math.round((value / momentumScale.value) * 100))
+}
+
 async function fetchAll() {
   loading.value = true
   try {
@@ -427,6 +797,10 @@ async function completeGame(fromLastRound = false) {
   } finally { saving.value = false }
 }
 
+watch(winnerDialog, visible => {
+  if (visible) playWinnerSound()
+})
+
 onMounted(fetchAll)
 </script>
 
@@ -441,6 +815,140 @@ onMounted(fetchAll)
   justify-content: center;
   border-radius: 8px;
   background: rgba(var(--st-primary-rgb), 0.08);
+}
+
+.game-insight-grid .v-col {
+  display: flex;
+}
+
+.insight-card {
+  width: 100%;
+  min-height: 124px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-left: 4px solid rgba(var(--st-primary-rgb), 0.4) !important;
+}
+
+.insight-race { border-left-color: rgb(var(--st-secondary-rgb)) !important; }
+.insight-bid { border-left-color: #31A24C !important; }
+.insight-stakes { border-left-color: #F0A202 !important; }
+.insight-swing { border-left-color: #1877F2 !important; }
+
+.insight-icon-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgba(var(--st-primary-rgb), 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.insight-body {
+  min-width: 0;
+}
+
+.insight-label {
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--st-text-muted);
+}
+
+.insight-value {
+  margin-top: 5px;
+  font-size: 1.15rem;
+  line-height: 1.2;
+  font-weight: 900;
+  color: rgb(var(--v-theme-on-surface));
+  overflow-wrap: anywhere;
+}
+
+.insight-detail {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--st-text-muted);
+}
+
+.standings-microline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--st-text-muted);
+}
+
+.micro-separator {
+  color: rgba(var(--v-theme-on-surface), 0.28);
+}
+
+.momentum-row {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--st-panel-border);
+}
+
+.momentum-row:last-child {
+  border-bottom: 0;
+}
+
+.momentum-head {
+  margin-bottom: 7px;
+}
+
+.momentum-name {
+  min-width: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: rgb(var(--v-theme-on-surface));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.award-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--st-panel-border);
+}
+
+.award-row:last-child {
+  border-bottom: 0;
+}
+
+.award-icon {
+  flex-shrink: 0;
+}
+
+.award-body {
+  min-width: 0;
+}
+
+.award-title {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: rgb(var(--v-theme-on-surface));
+}
+
+.award-player {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: rgb(var(--v-theme-primary));
+  overflow-wrap: anywhere;
+}
+
+.award-detail {
+  margin-top: 2px;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: var(--st-text-muted);
 }
 
 .winner-overlay {
@@ -514,7 +1022,7 @@ onMounted(fetchAll)
   color: #0f172a;
   text-shadow: 0 0 24px rgba(37, 99, 235, 0.18);
   margin: 8px 0 2px;
-  letter-spacing: -1px;
+  letter-spacing: 0;
   animation: fade-up 0.5s ease 0s both;
 }
 
@@ -582,9 +1090,18 @@ onMounted(fetchAll)
   font-weight: 900;
   color: rgb(var(--st-primary-rgb));
   text-shadow: 0 0 24px rgba(37, 99, 235, 0.3);
-  letter-spacing: -2px;
+  letter-spacing: 0;
   line-height: 1;
   animation: score-pop 0.6s cubic-bezier(.34, 1.56, .64, 1) 0.5s both;
+}
+
+.winner-awards {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  max-width: 100%;
+  animation: fade-up 0.4s ease 0.65s both;
 }
 
 @keyframes score-pop {

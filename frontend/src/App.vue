@@ -82,6 +82,18 @@
         <v-icon start size="14">mdi-cards</v-icon>
         Live Scoring
       </v-chip>
+      <v-tooltip :text="soundEnabled ? 'Sound on' : 'Sound muted'">
+        <template #activator="{ props }">
+          <v-btn
+            v-bind="props"
+            :icon="soundEnabled ? 'mdi-volume-high' : 'mdi-volume-off'"
+            variant="text"
+            color="primary"
+            class="mr-1"
+            @click="toggleSound"
+          />
+        </template>
+      </v-tooltip>
       <v-btn variant="text" color="primary" prepend-icon="mdi-logout" @click="doLogout">
         Logout
       </v-btn>
@@ -131,9 +143,10 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from '@/store'
+import { bindTapSounds, soundEnabled, toggleSound } from '@/utils/sound'
 
 const store       = useAppStore()
 const route       = useRoute()
@@ -141,6 +154,8 @@ const router      = useRouter()
 const drawer      = ref(true)
 const rail        = ref(false)
 const rulesDialog = ref(false)
+
+let unbindTapSounds = null
 
 const isLoginRoute = computed(() => route.name === 'Login')
 
@@ -170,6 +185,14 @@ function doLogout() {
   store.logout()
   router.push('/login')
 }
+
+onMounted(() => {
+  unbindTapSounds = bindTapSounds()
+})
+
+onBeforeUnmount(() => {
+  unbindTapSounds?.()
+})
 </script>
 
 <style scoped>
