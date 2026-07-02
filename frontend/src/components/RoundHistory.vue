@@ -137,9 +137,19 @@
                       <strong class="ml-1">{{ p.score >= 0 ? '+' : '' }}{{ p.score }}</strong>
                     </v-chip>
                   </div>
-                  <div v-if="expandedRound.partner_cards_asked" class="text-caption text-medium-emphasis ml-2 d-flex align-center">
-                    <v-icon size="14" class="mr-1">mdi-cards</v-icon>
-                    Asked: {{ expandedRound.partner_cards_asked }}
+                  <div v-if="partnerCards(expandedRound).length" class="partner-card-strip ml-2">
+                    <div class="text-caption text-medium-emphasis d-flex align-center mb-2">
+                      <v-icon size="14" class="mr-1">mdi-cards</v-icon>
+                      Partner cards
+                    </div>
+                    <div class="d-flex flex-wrap gap-3">
+                      <PartnerCardFace
+                        v-for="card in partnerCards(expandedRound)"
+                        :key="card.id"
+                        :card="card"
+                        :size="72"
+                      />
+                    </div>
                   </div>
                   <div v-if="expandedRound.notes" class="text-caption text-medium-emphasis ml-2 d-flex align-center">
                     <v-icon size="14" class="mr-1">mdi-note-text</v-icon>
@@ -177,6 +187,8 @@
 import { ref, computed } from 'vue'
 import { roundsAPI } from '@/api'
 import { BID_TYPE_LABELS, SUIT_META } from '@/utils/scoring'
+import { parsePartnerCards } from '@/utils/cards'
+import PartnerCardFace from '@/components/PartnerCardFace.vue'
 
 const props = defineProps({
   rounds: { type: Array, default: () => [] },
@@ -201,6 +213,7 @@ function bidTypeColor(t) {
 function suitIcon(s)  { return SUIT_META[s]?.icon  || '?' }
 function suitColor(s) { return SUIT_META[s]?.color || '#9CA3AF' }
 function suitLabel(s) { return SUIT_META[s]?.label || '—' }
+function partnerCards(round) { return parsePartnerCards(round?.partner_cards_asked || '') }
 
 function confirmDelete(round) {
   if (!props.canManage) return
@@ -232,5 +245,9 @@ async function deleteRound() {
 .round-detail-panel {
   background: rgba(var(--st-primary-rgb), 0.04);
   border: 1px solid rgba(var(--st-primary-rgb), 0.14);
+}
+
+.partner-card-strip {
+  min-width: 0;
 }
 </style>

@@ -444,17 +444,12 @@
                   <div class="text-caption text-medium-emphasis">CARDS PICKED</div>
                   <div class="replay-main-player">Asked partner cards</div>
                   <div class="replay-card-stack">
-                    <v-chip
-                      v-for="(card, index) in replayCards"
-                      :key="card"
-                      class="replay-card-chip"
-                      :style="{ '--delay': `${index * 90}ms` }"
-                      color="surface"
-                      variant="tonal"
-                      label
-                    >
-                      {{ card }}
-                    </v-chip>
+                    <PartnerCardFace
+                      v-for="card in replayCards"
+                      :key="card.id"
+                      :card="card"
+                      :size="78"
+                    />
                   </div>
                   <div class="replay-detail mt-3">
                     {{ replayRound.partner_cards_asked || 'No partner cards were recorded for this round.' }}
@@ -673,7 +668,9 @@ import { useRoute } from 'vue-router'
 import { gamesAPI } from '@/api'
 import { useAppStore } from '@/store'
 import { BID_TYPE_LABELS, SUIT_META, buildChartSeries } from '@/utils/scoring'
+import { parsePartnerCards } from '@/utils/cards'
 import { playWinnerSound, playTapSound, soundEnabled, toggleSound } from '@/utils/sound'
+import PartnerCardFace from '@/components/PartnerCardFace.vue'
 import RoundEntry   from '@/components/RoundEntry.vue'
 import RoundHistory from '@/components/RoundHistory.vue'
 
@@ -705,9 +702,18 @@ function fmtDate(d)       { return new Date(d).toLocaleDateString() }
 function suitLabel(suit) { return SUIT_META[suit]?.label || '—' }
 
 const replayCards = computed(() => {
-  const raw = String(replayRound.value?.partner_cards_asked || '').trim()
-  if (!raw) return ['No cards recorded']
-  return raw.split(',').map(card => card.trim()).filter(Boolean)
+  const cards = parsePartnerCards(replayRound.value?.partner_cards_asked || '')
+  return cards.length ? cards : [{
+    id: 'none',
+    label: 'No cards recorded',
+    title: 'No cards recorded',
+    rank: '—',
+    suit: '—',
+    symbol: '—',
+    color: '#64748B',
+    accent: '#64748B',
+    isJoker: false,
+  }]
 })
 
 const replayStageLabel = computed(() => {
