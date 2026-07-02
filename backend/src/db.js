@@ -29,6 +29,16 @@ async function runMigrations() {
     `);
 
     await client.query(`
+      ALTER TABLE games
+      DROP CONSTRAINT IF EXISTS games_num_players_check
+    `);
+
+    await client.query(`
+      ALTER TABLE games
+      ADD CONSTRAINT games_num_players_check CHECK (num_players >= 3)
+    `);
+
+    await client.query(`
       CREATE INDEX IF NOT EXISTS idx_games_owner_user_id
       ON games(owner_user_id)
     `);

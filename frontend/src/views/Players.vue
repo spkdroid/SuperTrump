@@ -433,7 +433,7 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { playersAPI } from '@/api'
 import { useAppStore } from '@/store'
 
@@ -581,6 +581,11 @@ async function deletePlayer() {
 }
 
 onMounted(fetchPlayers)
+
+watch(() => store.dataRefreshToken, async () => {
+  if (loading.value) return
+  await fetchPlayers()
+})
 </script>
 
 <style scoped>

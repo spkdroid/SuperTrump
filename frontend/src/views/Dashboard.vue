@@ -316,7 +316,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { activityAPI, gamesAPI, leaderboardAPI } from '@/api'
 import { useAppStore } from '@/store'
@@ -464,6 +464,18 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+})
+
+watch(() => store.dataRefreshToken, async () => {
+  if (loading.value) return
+  const [gRes, lRes, sRes] = await Promise.all([
+    gamesAPI.getAll(),
+    leaderboardAPI.overall(),
+    leaderboardAPI.stats(),
+  ])
+  allGames.value   = gRes.data
+  topPlayers.value = lRes.data.slice(0, 5)
+  stats.value      = sRes.data
 })
 </script>
 

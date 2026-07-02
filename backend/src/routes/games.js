@@ -93,8 +93,8 @@ router.post('/', requireUser, async (req, res, next) => {
     return res.status(400).json({ error: 'playerIds must contain unique numeric IDs' });
   }
 
-  if (normalizedPlayerIds.length < 3 || normalizedPlayerIds.length > 10) {
-    return res.status(400).json({ error: 'Game must have between 3 and 10 players' });
+  if (normalizedPlayerIds.length < 3) {
+    return res.status(400).json({ error: 'Game must have at least 3 players' });
   }
 
   const client = await pool.connect();
@@ -140,7 +140,7 @@ router.post('/', requireUser, async (req, res, next) => {
     await client.query('ROLLBACK');
     if (err.code === '23514' && err.constraint === 'games_num_players_check') {
       return res.status(400).json({
-        error: 'Game player count is invalid for this database. Choose 3 to 10 players. If you already did, recreate the DB volume to refresh schema.'
+        error: 'Game player count is invalid for this database. Choose at least 3 players. If you already did, recreate the DB volume to refresh schema.'
       });
     }
     next(err);

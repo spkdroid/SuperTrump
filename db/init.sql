@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS games (
     id             SERIAL PRIMARY KEY,
     name           VARCHAR(100) NOT NULL DEFAULT 'New Game',
     owner_user_id  INTEGER REFERENCES users(id),
-    num_players    INTEGER      NOT NULL CHECK (num_players BETWEEN 3 AND 10),
+    num_players    INTEGER      NOT NULL CHECK (num_players >= 3),
     status         VARCHAR(20)  NOT NULL DEFAULT 'active'
                        CHECK (status IN ('active', 'completed')),
     winner_id      INTEGER REFERENCES players(id),

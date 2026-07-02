@@ -6,6 +6,7 @@ import { clearSession, loadSession, saveSession } from '@/utils/session'
 export const useAppStore = defineStore('app', () => {
   const notifications = ref([])
   const currentUser = ref(loadSession())
+  const dataRefreshToken = ref(0)
 
   const isAuthenticated = computed(() => Boolean(currentUser.value?.username))
   const isAdmin = computed(() => currentUser.value?.role === 'admin')
@@ -40,6 +41,10 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  function triggerDataRefresh() {
+    dataRefreshToken.value += 1
+  }
+
   function canManageGame(game) {
     if (!currentUser.value || !game) return false
     if (isAdmin.value) return true
@@ -54,6 +59,8 @@ export const useAppStore = defineStore('app', () => {
     notify,
     login,
     logout,
+    triggerDataRefresh,
+    dataRefreshToken,
     canManageGame,
   }
 })

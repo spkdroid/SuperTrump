@@ -155,12 +155,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { leaderboardAPI } from '@/api'
+import { useAppStore } from '@/store'
 
 const loading = ref(true)
 const players = ref([])
 const stats   = ref({})
+const store   = useAppStore()
 
 function initials(n = '') { return n.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() }
 
@@ -205,6 +207,16 @@ onMounted(async () => {
     stats.value   = sRes.data
   } finally { loading.value = false }
 })
+
+watch(() => store.dataRefreshToken, async () => {
+  if (loading.value) return
+  const [lRes, sRes] = await Promise.all([
+    leaderboardAPI.overall(),
+    leaderboardAPI.stats(),
+  ])
+  players.value = lRes.data
+  stats.value   = sRes.data
+}, { flush: 'post' })
 </script>
 
 <style scoped>

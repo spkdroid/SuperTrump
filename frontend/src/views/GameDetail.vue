@@ -28,6 +28,37 @@
           <div class="d-flex gap-2 align-center flex-wrap">
             <v-btn
               v-if="game.status === 'active'"
+              :color="autoRefresh ? 'primary' : 'grey'"
+              :variant="autoRefresh ? 'tonal' : 'outlined'"
+              size="small"
+              rounded="pill"
+              :prepend-icon="autoRefresh ? 'mdi-refresh-auto' : 'mdi-refresh'"
+              @click="toggleAutoRefresh"
+            >
+              {{ autoRefresh ? 'Auto refresh' : 'Refresh off' }}
+            </v-btn>
+            <v-btn
+              v-if="game.status === 'active'"
+              :color="soundEnabled ? 'success' : 'grey'"
+              :variant="soundEnabled ? 'tonal' : 'outlined'"
+              size="small"
+              rounded="pill"
+              :prepend-icon="soundEnabled ? 'mdi-volume-high' : 'mdi-volume-off'"
+              @click="toggleSound"
+            >
+              {{ soundEnabled ? 'Sound on' : 'Sound off' }}
+            </v-btn>
+            <v-btn
+              v-if="game.status === 'active'"
+              icon="mdi-refresh"
+              size="small"
+              variant="text"
+              color="primary"
+              :loading="refreshing"
+              @click="doRefresh"
+            />
+            <v-btn
+              v-if="game.status === 'active'"
               color="info"
               variant="tonal"
               prepend-icon="mdi-scoreboard"
@@ -642,7 +673,7 @@ import { useRoute } from 'vue-router'
 import { gamesAPI } from '@/api'
 import { useAppStore } from '@/store'
 import { BID_TYPE_LABELS, SUIT_META, buildChartSeries } from '@/utils/scoring'
-import { playWinnerSound } from '@/utils/sound'
+import { playWinnerSound, playTapSound, soundEnabled, toggleSound } from '@/utils/sound'
 import RoundEntry   from '@/components/RoundEntry.vue'
 import RoundHistory from '@/components/RoundHistory.vue'
 
@@ -651,6 +682,7 @@ const store   = useAppStore()
 const gameId  = route.params.id
 
 const loading         = ref(true)
+const refreshing      = ref(false)
 const saving          = ref(false)
 const game            = ref(null)
 const leaderboard     = ref([])
@@ -663,6 +695,9 @@ const replayDialog    = ref(false)
 const replayRound     = ref(null)
 const replayStage     = ref(0)
 const replayTimers    = []
+const autoRefresh     = ref(true)
+let   refreshTimer    = null
+const lastGameSnapshot = ref('')
 
 function initials(n = '') { return n.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase() }
 function shortName(n = '') { return n.split(' ')[0] }
@@ -1039,6 +1074,25 @@ function momentumProgress(entry) {
   return Math.max(8, Math.round((value / momentumScale.value) * 100))
 }
 
+function snapshotGameState() {
+  return JSON.stringify({
+    status: game.value?.status || null,
+    current_round: game.value?.current_round || 0,
+    winner_id: game.value?.winner_id || null,
+    leaderboard: leaderboard.value.map((entry) => [entry.player_id, entry.current_score]),
+    rounds: rounds.value.map((round) => round.id),
+  })
+}
+
+function handleLiveUpdate(previousSnapshot) {
+  const nextSnapshot = snapshotGameState()
+  if (previousSnapshot && previousSnapshot !== nextSnapshot) {
+    store.notify('Game updated', 'info')
+    if (soundEnabled.value) playTapSound()
+  }
+  lastGameSnapshot.value = nextSnapshot
+}
+
 function clearReplayTimers() {
   while (replayTimers.length) {
     clearTimeout(replayTimers.pop())
@@ -1067,8 +1121,36 @@ function openReplay(item) {
   }, 2400))
 }
 
-async function fetchAll() {
-  loading.value = true
+function stopAutoRefresh() {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
+  }
+}
+
+function startAutoRefresh() {
+  stopAutoRefresh()
+  if (game.value?.status !== 'active' || !autoRefresh.value) return
+  refreshTimer = setInterval(() => {
+    fetchAll(true)
+  }, 8000)
+}
+
+function toggleAutoRefresh() {
+  autoRefresh.value = !autoRefresh.value
+  if (autoRefresh.value) {
+    startAutoRefresh()
+    store.notify('Auto refresh enabled', 'info')
+  } else {
+    stopAutoRefresh()
+    store.notify('Auto refresh paused', 'warning')
+  }
+}
+
+async function fetchAll(quiet = false) {
+  const previousSnapshot = lastGameSnapshot.value || snapshotGameState()
+  if (!quiet) loading.value = true
+  else refreshing.value = true
   try {
     const [gRes, lRes, rRes] = await Promise.all([
       gamesAPI.get(gameId),
@@ -1078,7 +1160,11 @@ async function fetchAll() {
     game.value        = gRes.data
     leaderboard.value = lRes.data
     rounds.value      = rRes.data
-  } finally { loading.value = false }
+    handleLiveUpdate(previousSnapshot)
+  } finally {
+    loading.value = false
+    refreshing.value = false
+  }
 }
 
 async function onRoundSaved() {
@@ -1103,6 +1189,7 @@ async function completeGame(fromLastRound = false) {
   saving.value = true
   try {
     await gamesAPI.complete(gameId)
+    store.triggerDataRefresh()
     if (!fromLastRound) {
       store.notify('🏆 Game completed!')
       completeDialog.value = false
@@ -1120,9 +1207,23 @@ watch(replayDialog, (visible) => {
   if (!visible) clearReplayTimers()
 })
 
-onMounted(fetchAll)
+watch(() => game.value?.status, (status) => {
+  if (status === 'active' && autoRefresh.value) startAutoRefresh()
+  else stopAutoRefresh()
+})
+
+watch(() => store.dataRefreshToken, async () => {
+  if (loading.value) return
+  await fetchAll(true)
+})
+
+onMounted(async () => {
+  await fetchAll()
+  if (autoRefresh.value) startAutoRefresh()
+})
 onBeforeUnmount(() => {
   clearReplayTimers()
+  stopAutoRefresh()
 })
 </script>
 

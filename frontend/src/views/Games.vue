@@ -256,8 +256,8 @@
             class="text-caption text-error mt-2">
             Minimum 3 players required.
           </div>
-          <div v-if="newGame.playerIds.length > 10" class="text-caption text-error mt-2">
-            Maximum 10 players allowed.
+          <div v-if="newGame.playerIds.length >= 3" class="text-caption text-medium-emphasis mt-2">
+            No upper player limit.
           </div>
         </v-card-text>
         <v-divider />
@@ -268,7 +268,7 @@
             color="primary"
             rounded="lg"
             :loading="saving"
-            :disabled="newGame.playerIds.length < 3 || newGame.playerIds.length > 10"
+            :disabled="newGame.playerIds.length < 3"
             @click="createGame"
           >
             Start Game
@@ -300,7 +300,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { gamesAPI, playersAPI } from '@/api'
 import { useAppStore } from '@/store'
 import { useRouter } from 'vue-router'
@@ -373,8 +373,7 @@ function canManage(game)  { return store.canManageGame(game) }
 function togglePlayer(id) {
   const idx = newGame.value.playerIds.indexOf(id)
   if (idx >= 0) newGame.value.playerIds.splice(idx, 1)
-  else if (newGame.value.playerIds.length < 10) newGame.value.playerIds.push(id)
-  else store.notify('Maximum 10 players allowed per game', 'warning')
+  else newGame.value.playerIds.push(id)
 }
 
 function confirmDelete(game) { deletingGame.value = game; deleteDialog.value = true }
@@ -390,8 +389,8 @@ async function fetchGames() {
 
 async function createGame() {
   const selectedCount = newGame.value.playerIds.length
-  if (selectedCount < 3 || selectedCount > 10) {
-    store.notify('Select between 3 and 10 players', 'warning')
+  if (selectedCount < 3) {
+    store.notify('Select at least 3 players', 'warning')
     return
   }
 
@@ -416,6 +415,11 @@ async function deleteGame() {
 }
 
 onMounted(fetchGames)
+
+watch(() => store.dataRefreshToken, async () => {
+  if (loading.value) return
+  await fetchGames()
+})
 </script>
 
 <style scoped>
