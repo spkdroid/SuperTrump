@@ -18,7 +18,7 @@
           <th>Bidder</th>
           <th class="text-center">Bid</th>
           <th class="text-center">Type</th>
-          <th class="text-center">Trump</th>
+          <th class="text-center">Cards</th>
           <th class="text-center">Points Won</th>
           <th class="text-center">Result</th>
           <th class="text-right">Bidder Δ</th>
@@ -55,12 +55,18 @@
             </v-chip>
           </td>
           <td class="text-center">
-            <span :style="`color: ${suitColor(round.trump_suit)}`" class="text-subtitle-2">
-              {{ suitIcon(round.trump_suit) }}
-            </span>
-            <span class="text-caption text-medium-emphasis ml-1">
-              {{ suitLabel(round.trump_suit) }}
-            </span>
+            <div v-if="partnerCards(round).length" class="round-card-preview">
+              <PartnerCardFace
+                v-for="card in partnerCards(round).slice(0, 2)"
+                :key="card.id"
+                :card="card"
+                :size="46"
+              />
+              <div v-if="partnerCards(round).length > 2" class="text-caption text-medium-emphasis">
+                +{{ partnerCards(round).length - 2 }}
+              </div>
+            </div>
+            <div v-else class="text-caption text-medium-emphasis">—</div>
           </td>
           <td class="text-center text-body-2">
             {{ round.points_won_by_bidding_team }}/{{ round.bid_amount }}
@@ -150,6 +156,10 @@
                         :size="72"
                       />
                     </div>
+                  </div>
+                  <div v-if="expandedRound.trump_suit" class="text-caption text-medium-emphasis ml-2 d-flex align-center">
+                    <v-icon size="14" class="mr-1">mdi-cards-spade</v-icon>
+                    Trump: {{ suitLabel(expandedRound.trump_suit) }}
                   </div>
                   <div v-if="expandedRound.notes" class="text-caption text-medium-emphasis ml-2 d-flex align-center">
                     <v-icon size="14" class="mr-1">mdi-note-text</v-icon>
@@ -249,5 +259,12 @@ async function deleteRound() {
 
 .partner-card-strip {
   min-width: 0;
+}
+
+.round-card-preview {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 </style>
