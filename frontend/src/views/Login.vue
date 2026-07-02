@@ -4,7 +4,7 @@
       <v-card class="st-panel login-card" color="surface" rounded="xl" elevation="0">
         <div class="login-hero pa-6 pb-4">
           <div class="brand-icon-wrap mb-3">
-            <v-icon color="primary" size="24">mdi-cards-playing</v-icon>
+            <img src="/logo/jester.png" alt="Super Trump logo" class="brand-logo-img" />
           </div>
           <h1 class="st-page-title mb-1">Welcome to Super Trump</h1>
           <p class="st-page-subtitle mb-0">
@@ -112,5 +112,13 @@ async function submitLogin() {
   border-radius: 12px;
   background: rgba(var(--st-primary-rgb), 0.12);
   box-shadow: 0 8px 14px rgba(var(--st-primary-rgb), 0.18);
+  overflow: hidden;
+}
+
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 </style>

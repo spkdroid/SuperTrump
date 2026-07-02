@@ -13,7 +13,7 @@
       <!-- Brand Header -->
       <div class="nav-brand" :class="{ 'nav-brand-rail': rail }">
         <div class="brand-icon-wrap">
-          <v-icon color="primary" size="22">mdi-cards-playing</v-icon>
+          <img src="/logo/jester.png" alt="Super Trump logo" class="brand-logo-img" />
         </div>
         <transition name="brand-fade">
           <div v-if="!rail" class="brand-text-wrap">
@@ -63,6 +63,9 @@
     <!-- ── App Bar ────────────────────────────────────── -->
     <v-app-bar v-if="!isLoginRoute" flat color="surface" class="app-bar-border st-topbar">
       <v-app-bar-nav-icon variant="text" @click="rail = !rail" />
+      <div class="app-bar-logo-wrap mr-2">
+        <img src="/logo/jester.png" alt="Super Trump logo" class="app-bar-logo-img" />
+      </div>
       <v-app-bar-title>
         <span class="font-weight-bold text-on-surface">Super Trump</span>
         <span class="text-caption ml-2 text-medium-emphasis">Scoring System</span>
@@ -238,6 +241,30 @@ onBeforeUnmount(() => {
   box-shadow: 0 8px 14px rgba(var(--st-primary-rgb), 0.18);
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.app-bar-logo-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: rgba(var(--st-primary-rgb), 0.12);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.app-bar-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 .brand-text-wrap { flex-grow: 1; min-width: 0; }
 .brand-name {
